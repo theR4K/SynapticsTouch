@@ -17,10 +17,13 @@
 [Rr]eleases/
 x64/
 x86/
+ARM/
 bld/
 [Bb]in/
 [Oo]bj/
 [Ll]og/
+Device/wdk/ARM
+Controller/wdk/ARM
 
 # Visual Studio 2015 cache/options directory
 .vs/
