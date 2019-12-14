@@ -176,7 +176,12 @@ TOUCH_DEVICE_RESOLUTION_Y & 0xff,
     REPORT_COUNT, 0x01,                     //   REPORT_COUNT (1)
     REPORT_SIZE, 0x05,                      //   REPORT_SIZE (5)
     INPUT, 0x03,                            //   INPUT (Cnst,Var,Abs)
-    END_COLLECTION                          // END_COLLECTION
+    END_COLLECTION,                          // END_COLLECTION
+    
+    //USAGE_PAGE_1, 01,
+    //USAGE_1, 0x0d,
+    //BEGIN_COLLECTION, 0x02,
+    //USAGE_PAGE_1,0x90
 };
 const ULONG gdwcbReportDescriptor = sizeof(gReportDescriptor);
 

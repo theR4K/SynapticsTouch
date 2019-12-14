@@ -23,6 +23,7 @@
     <ClInclude Include="..\Include\device.h" />
     <ClInclude Include="..\Include\driver.h" />
     <ClInclude Include="..\Include\hid.h" />
+    <ClInclude Include="..\Include\hidCommon.h" />
     <ClInclude Include="..\Include\idle.h" />
     <ClInclude Include="..\Include\internal.h" />
     <ClInclude Include="..\Include\queue.h" />
@@ -56,11 +57,13 @@
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM'" Label="Configuration">
     <UseDebugLibraries>true</UseDebugLibraries>
-    <DriverTargetPlatform>Universal</DriverTargetPlatform>
+    <DriverTargetPlatform>Desktop</DriverTargetPlatform>
+    <TargetVersion>WindowsV6.3</TargetVersion>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM'" Label="Configuration">
     <UseDebugLibraries>false</UseDebugLibraries>
-    <DriverTargetPlatform>Universal</DriverTargetPlatform>
+    <DriverTargetPlatform>Desktop</DriverTargetPlatform>
+    <TargetVersion>WindowsV6.3</TargetVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">

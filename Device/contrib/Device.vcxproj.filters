@@ -57,6 +57,9 @@
     <ClInclude Include="..\..\Include\winphoneabi.h">
       <Filter>Headers</Filter>
     </ClInclude>
+    <ClInclude Include="..\Include\hidCommon.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Headers">
