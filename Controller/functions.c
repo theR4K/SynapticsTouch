@@ -715,11 +715,11 @@ GetTouchesFromF12(
             {
             case RMI_F12_OBJECT_FINGER:
             case RMI_F12_OBJECT_STYLUS:
-                FingerStatusRegister |= 1<i;
+                FingerStatusRegister |= 1 << i;
                 fingers++;
                 break;
             default:
-                FingerStatusRegister &= 0 < i;
+                FingerStatusRegister &= 0 << i;
                 break;
             }
 
