@@ -191,7 +191,7 @@ RmiChangePage(
 
 
 NTSTATUS
-ConfigurateF01(
+configureF01(
 	IN RMI4_CONTROLLER_CONTEXT *ControllerContext,
 	IN SPB_CONTEXT *SpbContext
 );
@@ -216,7 +216,7 @@ UpdateLocalFingerCacheF11(
 );
 
 NTSTATUS
-ConfigurateF11(
+configureF11(
 	IN RMI4_CONTROLLER_CONTEXT *ControllerContext,
 	IN SPB_CONTEXT *SpbContext
 );
@@ -241,13 +241,13 @@ UpdateLocalFingerCacheF12(
 );
 
 NTSTATUS
-ConfigurateF12(
+configureF12(
 	IN RMI4_CONTROLLER_CONTEXT *ControllerContext,
 	IN SPB_CONTEXT *SpbContext
 );
 
 NTSTATUS
-ConfigurateF1A(
+configureF1A(
 	IN RMI4_CONTROLLER_CONTEXT *ControllerContext,
 	IN SPB_CONTEXT *SpbContext
 );
