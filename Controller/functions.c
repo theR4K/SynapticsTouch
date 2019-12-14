@@ -396,6 +396,12 @@ Return Value:
 			Cache->FingerSlotValid &= ~(1 << i);
 		}
 	}
+
+	//
+	// Get current scan time (in 100us units)
+	//
+	ULONG64 QpcTimeStamp;
+	Cache->ScanTime = KeQueryInterruptTimePrecise(&QpcTimeStamp) / 1000;
 }
 
 NTSTATUS
@@ -879,8 +885,8 @@ Return Value:
 	//
 	// Get current scan time (in 100us units)
 	//
-	//ULONG64 QpcTimeStamp;
-	//Cache->ScanTime = KeQueryInterruptTimePrecise(&QpcTimeStamp) / 1000;
+	ULONG64 QpcTimeStamp;
+	Cache->ScanTime = KeQueryInterruptTimePrecise(&QpcTimeStamp) / 1000;
 }
 
 const PRMI_REGISTER_DESC_ITEM RmiGetRegisterDescItem(

@@ -41,25 +41,27 @@ const UCHAR gReportDescriptor[] = {
     0x75, 0x01,                         //     REPORT_SIZE (1)              
     0x95, 0x01,                         //     REPORT_COUNT (1)             
     0x81, 0x02,                         //       INPUT (Data,Var,Abs) 
-    0x09, 0x32,	                        //     USAGE (In Range)             
-    0x81, 0x02,                         //       INPUT (Data,Var,Abs)         
-    0x95, 0x06,                         //     REPORT_COUNT (6)  
+    0x95, 0x07,                         //     REPORT_COUNT (7)
     0x81, 0x03,                         //       INPUT (Cnst,Ary,Abs)
     0x75, 0x08,                         //     REPORT_SIZE (8)
-    0x09, 0x51,                         //     USAGE ( Temp Identifier)
+    0x09, 0x51,                         //     USAGE (Contact Identifier)
     0x95, 0x01,                         //     REPORT_COUNT (1)             
     0x81, 0x02,                         //       INPUT (Data,Var,Abs) 
     0x05, 0x01,                         //     USAGE_PAGE (Generic Desk..
-    0x26, TOUCH_DEVICE_RESOLUTION_X & 0xff, (TOUCH_DEVICE_RESOLUTION_X >> 8) & 0xff,  //     LOGICAL_MAXIMUM (4095)         
+    0x26, 
+TOUCH_DEVICE_RESOLUTION_X & 0xff, 
+(TOUCH_DEVICE_RESOLUTION_X >> 8) & 0xff,//     LOGICAL_MAXIMUM      
     0x75, 0x10,                         //     REPORT_SIZE (16)             
     0x55, 0x0e,                         //     UNIT_EXPONENT (-2)           
-    0x65, 0x33,                         //     UNIT (Inch,EngLinear)                  
+    0x65, 0x13,                         //     UNIT (Inch,EngLinear)
     0x09, 0x30,                         //     USAGE (X)                    
     0x35, 0x00,                         //     PHYSICAL_MINIMUM (0)         
-    0x46, 0x38, 0x04,                   //     PHYSICAL_MAXIMUM (1080)         
+    0x46, 0x1b, 0x01,                   //     PHYSICAL_MAXIMUM (283)       NOTE: ADJUST PHYSICAL MAXIMUM FOR X BASED ON TOUCH SCREEN DIMENSION (100ths of an inch)!
     0x81, 0x02,                         //       INPUT (Data,Var,Abs)         
-    0x46, 0x80, 0x07,                   //     PHYSICAL_MAXIMUM (1920)
-	0x26, TOUCH_DEVICE_RESOLUTION_Y & 0xff, (TOUCH_DEVICE_RESOLUTION_Y >> 8) & 0xff,  //     LOGICAL_MAXIMUM (4095)     
+    0x46, 0xf0, 0x01,                   //     PHYSICAL_MAXIMUM (496)       NOTE: ADJUST PHYSICAL MAXIMUM FOR Y BASED ON TOUCH SCREEN DIMENSION (100ths of an inch)!
+    0x26,
+TOUCH_DEVICE_RESOLUTION_Y & 0xff,
+(TOUCH_DEVICE_RESOLUTION_Y >> 8) & 0xff,//     LOGICAL_MAXIMUM
     0x09, 0x31,                         //     USAGE (Y)                
     0x81, 0x02,                         //       INPUT (Data,Var,Abs)
     0xc0,                               //   END_COLLECTION
@@ -71,25 +73,27 @@ const UCHAR gReportDescriptor[] = {
     0x75, 0x01,                         //     REPORT_SIZE (1)              
     0x95, 0x01,                         //     REPORT_COUNT (1)             
     0x81, 0x02,                         //       INPUT (Data,Var,Abs) 
-    0x09, 0x32,	                        //     USAGE (In Range)             
-    0x81, 0x02,                         //     INPUT (Data,Var,Abs)         
-    0x95, 0x06,                         //     REPORT_COUNT (6)  
+    0x95, 0x07,                         //     REPORT_COUNT (7)
     0x81, 0x03,                         //       INPUT (Cnst,Ary,Abs)
     0x75, 0x08,                         //     REPORT_SIZE (8)
-    0x09, 0x51,                         //     USAGE ( Temp Identifier)
+    0x09, 0x51,                         //     USAGE (Contact Identifier)
     0x95, 0x01,                         //     REPORT_COUNT (1)             
     0x81, 0x02,                         //       INPUT (Data,Var,Abs) 
     0x05, 0x01,                         //     USAGE_PAGE (Generic Desk..
-    0x26, TOUCH_DEVICE_RESOLUTION_X & 0xff, (TOUCH_DEVICE_RESOLUTION_X >> 8) & 0xff,                   //     LOGICAL_MAXIMUM (4095)       
+    0x26,
+TOUCH_DEVICE_RESOLUTION_X & 0xff,
+(TOUCH_DEVICE_RESOLUTION_X >> 8) & 0xff,//     LOGICAL_MAXIMUM 
     0x75, 0x10,                         //     REPORT_SIZE (16)             
     0x55, 0x0e,                         //     UNIT_EXPONENT (-2)           
-    0x65, 0x33,                         //     UNIT (Inch,EngLinear)                  
+    0x65, 0x13,                         //     UNIT (Inch,EngLinear)
     0x09, 0x30,                         //     USAGE (X)                    
     0x35, 0x00,                         //     PHYSICAL_MINIMUM (0)         
-    0x46, 0x38, 0x04,                   //     PHYSICAL_MAXIMUM (1080)         
+    0x46, 0x1b, 0x01,                   //     PHYSICAL_MAXIMUM (283)       NOTE: ADJUST PHYSICAL MAXIMUM FOR X BASED ON TOUCH SCREEN DIMENSION (100ths of an inch)!
     0x81, 0x02,                         //       INPUT (Data,Var,Abs)         
-    0x46, 0x80, 0x07,                   //     PHYSICAL_MAXIMUM (1920)
-	0x26, TOUCH_DEVICE_RESOLUTION_Y & 0xff, (TOUCH_DEVICE_RESOLUTION_Y >> 8) & 0xff,  //     LOGICAL_MAXIMUM (4095)   
+    0x46, 0xf0, 0x01,                   //     PHYSICAL_MAXIMUM (496)       NOTE: ADJUST PHYSICAL MAXIMUM FOR Y BASED ON TOUCH SCREEN DIMENSION (100ths of an inch)!
+    0x26,
+TOUCH_DEVICE_RESOLUTION_Y & 0xff,
+(TOUCH_DEVICE_RESOLUTION_Y >> 8) & 0xff,//     LOGICAL_MAXIMUM
     0x09, 0x31,                         //     USAGE (Y)                    
     0x81, 0x02,                         //       INPUT (Data,Var,Abs)
     0xc0,                               //   END_COLLECTION
@@ -97,6 +101,14 @@ const UCHAR gReportDescriptor[] = {
     0x09, 0x54,	                        //   USAGE (Actual count)
     0x95, 0x01,                         //   REPORT_COUNT (1)
     0x75, 0x08,                         //   REPORT_SIZE (8)    
+    0x81, 0x02,                         //     INPUT (Data,Var,Abs)
+    0x55, 0x0C,                         //   UNIT_EXPONENT (-4)
+    0x66, 0x01, 0x10,                   //   UNIT (Seconds)
+    0x47, 0xff, 0xff, 0x00, 0x00,       //   PHYSICAL_MAXIMUM (65535)
+    0x27, 0xff, 0xff, 0x00, 0x00,       //   LOGICAL_MAXIMUM (65535)
+    0x09, 0x56,                         //   USAGE (Scan Time)
+    0x95, 0x01,                         //   REPORT_COUNT (1)
+    0x75, 0x10,                         //   REPORT_SIZE (16)
     0x81, 0x02,                         //     INPUT (Data,Var,Abs)
     0x85, REPORTID_MAX_COUNT,           //   REPORT_ID (Feature)              
     0x09, 0x55,                         //   USAGE(Maximum Count)
@@ -151,8 +163,8 @@ const UCHAR gReportDescriptor[] = {
 	0x85, REPORTID_CAPKEY,				//   REPORT_ID
 	0x05, 0x07,							//   USAGE_PAGE (Keyboard)
 	0x09, 0xe3,							//   USAGE (Keyboard Left GUI) - Start/Home
-	0x09, 0x3A,							//   USAGE (Keyboard F1)	 - Search
-	0x09, 0x29,							//   USAGE (Keyboard ESCAPE) - Back
+	0x09, 0x3A,							//   USAGE (Keyboard F1)	   - Search
+	0x09, 0x29,							//   USAGE (Keyboard ESCAPE)   - Back
 	0x15, 0x00,							//   LOGICAL_MINIMUM (0)
 	0x25, 0x01,							//   LOGICAL_MAXIMUM (1)
 	0x75, 0x01,							//   REPORT_SIZE (1)
