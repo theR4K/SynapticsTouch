@@ -14,7 +14,7 @@ Ceil( IN int value, IN int divider)
 //F01
 
 NTSTATUS
-ConfigurateF01(
+configureF01(
 	IN RMI4_CONTROLLER_CONTEXT *ControllerContext,
 	IN SPB_CONTEXT *SpbContext
 )
@@ -399,7 +399,7 @@ Return Value:
 }
 
 NTSTATUS
-ConfigurateF11(
+configureF11(
 	IN RMI4_CONTROLLER_CONTEXT *ControllerContext,
 	IN SPB_CONTEXT *SpbContext
 )
@@ -1127,7 +1127,7 @@ i2c_read_fail:
 }
 
 NTSTATUS
-ConfigurateF12(
+configureF12(
 	IN RMI4_CONTROLLER_CONTEXT *ControllerContext,
 	IN SPB_CONTEXT *SpbContext
 )
@@ -1398,7 +1398,7 @@ exit:
 
 //F1A
 NTSTATUS
-ConfigurateF1A(
+configureF1A(
 	IN RMI4_CONTROLLER_CONTEXT *ControllerContext,
 	IN SPB_CONTEXT *SpbContext
 )
