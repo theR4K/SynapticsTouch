@@ -22,7 +22,7 @@
 #pragma once
 
 #include <hwn.h>
-#include "wpstuff.h"
+#include "winphoneabi.h"
 
 #define BKL_REGISTRY_PATH          L"\\Registry\\Machine\\SYSTEM\\TOUCH\\BUTTONS\\BACKLIGHT"
 
