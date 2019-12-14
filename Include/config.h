@@ -6,7 +6,7 @@
 #define TOUCH_PHYSICAL_RESOLUTION_Y     1259  //12.59
 
 
-//comment next line to use 10 fingers dara registers status
+//comment next line to use 10 fingers data registers status
 //needs for L630 
 #define USE_SHORT_F11_DATA_REGISTERS_STATUS
 
