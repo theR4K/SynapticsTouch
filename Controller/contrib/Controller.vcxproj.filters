@@ -1,0 +1,98 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="..\backlight.c">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="..\bitops.c">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="..\common.c">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="..\functions.c">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="..\hweight.c">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="..\init.c">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="..\power.c">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="..\registry.c">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="..\report.c">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="..\resolutions.c">
+      <Filter>Sources</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\Include\spb.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Include\backlight.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Include\bitops.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Include\common.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\config.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\controller.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\debug.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Include\Functions\F01.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Include\Functions\F1A.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Include\Functions\F11.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Include\Functions\F12.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Include\hweight.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Include\resolutions.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Include\rmiinternal.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\winphoneabi.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Headers">
+      <UniqueIdentifier>{76411ef2-167c-4fb6-9498-c20823af7633}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Sources">
+      <UniqueIdentifier>{6715b69b-763e-47f3-9d63-498b5a7e28c6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="DriverFiles">
+      <UniqueIdentifier>{1f5e09b2-e733-4007-baad-d368e521a06b}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <Inf Include="..\SynapticsTouch.inf">
+      <Filter>DriverFiles</Filter>
+    </Inf>
+  </ItemGroup>
+</Project>

@@ -51,7 +51,7 @@
     <OutDir Condition="'$(SolutionDir)' == ''">$(IntDir)</OutDir>
   </PropertyGroup>
   <PropertyGroup Label="Globals">
-    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
+    <WindowsTargetPlatformVersion>10.0.17763.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <PropertyGroup Label="PropertySheets">
     <PlatformToolset>WindowsKernelModeDriver10.0</PlatformToolset>
