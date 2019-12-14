@@ -1,0 +1,47 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 11
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Device", "Device\wdk\Device.vcxproj", "{1584B5B0-3401-4A53-B7AB-A22850E61C3B}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Controller", "Controller\wdk\Controller.vcxproj", "{37D98EC8-0F81-4F96-9DBD-223495C3F611}"
+	ProjectSection(ProjectDependencies) = postProject
+		{1584B5B0-3401-4A53-B7AB-A22850E61C3B} = {1584B5B0-3401-4A53-B7AB-A22850E61C3B}
+	EndProjectSection
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Win8 beta Debug|ARM = Win8 beta Debug|ARM
+		Win8 beta Debug|Win32 = Win8 beta Debug|Win32
+		Win8 beta Release|ARM = Win8 beta Release|ARM
+		Win8 beta Release|Win32 = Win8 beta Release|Win32
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{1584B5B0-3401-4A53-B7AB-A22850E61C3B}.Win8 beta Debug|ARM.ActiveCfg = Win8 beta Debug|ARM
+		{1584B5B0-3401-4A53-B7AB-A22850E61C3B}.Win8 beta Debug|ARM.Build.0 = Win8 beta Debug|ARM
+		{1584B5B0-3401-4A53-B7AB-A22850E61C3B}.Win8 beta Debug|ARM.Deploy.0 = Win8 beta Debug|ARM
+		{1584B5B0-3401-4A53-B7AB-A22850E61C3B}.Win8 beta Debug|Win32.ActiveCfg = Win8 beta Debug|Win32
+		{1584B5B0-3401-4A53-B7AB-A22850E61C3B}.Win8 beta Debug|Win32.Build.0 = Win8 beta Debug|Win32
+		{1584B5B0-3401-4A53-B7AB-A22850E61C3B}.Win8 beta Debug|Win32.Deploy.0 = Win8 beta Debug|Win32
+		{1584B5B0-3401-4A53-B7AB-A22850E61C3B}.Win8 beta Release|ARM.ActiveCfg = Win8 beta Release|ARM
+		{1584B5B0-3401-4A53-B7AB-A22850E61C3B}.Win8 beta Release|ARM.Build.0 = Win8 beta Release|ARM
+		{1584B5B0-3401-4A53-B7AB-A22850E61C3B}.Win8 beta Release|ARM.Deploy.0 = Win8 beta Release|ARM
+		{1584B5B0-3401-4A53-B7AB-A22850E61C3B}.Win8 beta Release|Win32.ActiveCfg = Win8 beta Release|Win32
+		{1584B5B0-3401-4A53-B7AB-A22850E61C3B}.Win8 beta Release|Win32.Build.0 = Win8 beta Release|Win32
+		{1584B5B0-3401-4A53-B7AB-A22850E61C3B}.Win8 beta Release|Win32.Deploy.0 = Win8 beta Release|Win32
+		{37D98EC8-0F81-4F96-9DBD-223495C3F611}.Win8 beta Debug|ARM.ActiveCfg = Win8 beta Debug|ARM
+		{37D98EC8-0F81-4F96-9DBD-223495C3F611}.Win8 beta Debug|ARM.Build.0 = Win8 beta Debug|ARM
+		{37D98EC8-0F81-4F96-9DBD-223495C3F611}.Win8 beta Debug|ARM.Deploy.0 = Win8 beta Debug|ARM
+		{37D98EC8-0F81-4F96-9DBD-223495C3F611}.Win8 beta Debug|Win32.ActiveCfg = Win8 beta Debug|Win32
+		{37D98EC8-0F81-4F96-9DBD-223495C3F611}.Win8 beta Debug|Win32.Build.0 = Win8 beta Debug|Win32
+		{37D98EC8-0F81-4F96-9DBD-223495C3F611}.Win8 beta Debug|Win32.Deploy.0 = Win8 beta Debug|Win32
+		{37D98EC8-0F81-4F96-9DBD-223495C3F611}.Win8 beta Release|ARM.ActiveCfg = Win8 beta Release|ARM
+		{37D98EC8-0F81-4F96-9DBD-223495C3F611}.Win8 beta Release|ARM.Build.0 = Win8 beta Release|ARM
+		{37D98EC8-0F81-4F96-9DBD-223495C3F611}.Win8 beta Release|ARM.Deploy.0 = Win8 beta Release|ARM
+		{37D98EC8-0F81-4F96-9DBD-223495C3F611}.Win8 beta Release|Win32.ActiveCfg = Win8 beta Release|Win32
+		{37D98EC8-0F81-4F96-9DBD-223495C3F611}.Win8 beta Release|Win32.Build.0 = Win8 beta Release|Win32
+		{37D98EC8-0F81-4F96-9DBD-223495C3F611}.Win8 beta Release|Win32.Deploy.0 = Win8 beta Release|Win32
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal

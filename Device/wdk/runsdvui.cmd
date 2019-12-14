@@ -1,0 +1,2 @@
+cd /d "C:\Users\36927\Desktop\SynapticsTouch\win8\noTrace\Device\wdk" &msbuild "Device.vcxproj" /t:sdvViewer /p:configuration="Win8 beta Debug" /p:platform="ARM" /p:SolutionDir="C:\Users\36927\Desktop\SynapticsTouch\win8\noTrace" 
+exit %errorlevel% 
