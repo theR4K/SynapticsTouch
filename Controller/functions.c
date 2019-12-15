@@ -1133,7 +1133,8 @@ RmiSetReportingMode(
     IN RMI4_CONTROLLER_CONTEXT* ControllerContext,
     IN SPB_CONTEXT* SpbContext,
     IN UCHAR NewMode,
-    OUT UCHAR* OldMode
+    OUT UCHAR* OldMode,
+    IN PRMI_REGISTER_DESCRIPTOR ControlRegDesc
 )
 /*++
 
@@ -1197,9 +1198,9 @@ RmiSetReportingMode(
         goto exit;
     }
 
-    indexCtrl20 = RmiGetRegisterIndex(&ControllerContext->ControlRegDesc, F12_2D_CTRL20);
+    indexCtrl20 = RmiGetRegisterIndex(ControlRegDesc, F12_2D_CTRL20);
 
-    if (indexCtrl20 == ControllerContext->ControlRegDesc.NumRegisters)
+    if (indexCtrl20 == ControlRegDesc->NumRegisters)
     {
         Trace(
             TRACE_LEVEL_ERROR,
@@ -1210,7 +1211,7 @@ RmiSetReportingMode(
         goto exit;
     }
 
-    if (ControllerContext->ControlRegDesc.Registers[indexCtrl20].RegisterSize != sizeof(reportingControl))
+    if (ControlRegDesc->Registers[indexCtrl20].RegisterSize != sizeof(reportingControl))
     {
         Trace(
             TRACE_LEVEL_ERROR,
@@ -1292,6 +1293,9 @@ configureF12(
     char buf;
     USHORT data_offset = 0;
     PRMI_REGISTER_DESC_ITEM item;
+    
+    RMI_REGISTER_DESCRIPTOR ControlRegDesc;
+    RMI_REGISTER_DESCRIPTOR DataRegDesc;
 
     //
     // Find 2D touch sensor function and configure it
@@ -1360,9 +1364,9 @@ configureF12(
         goto exit;
     }
 
-    ControllerContext->HasDribble = !!(buf & BIT(3));
+    //ControllerContext->HasDribble = !!(buf & BIT(3));
 
-    status = RmiReadRegisterDescriptor(
+    /*status = RmiReadRegisterDescriptor(
         SpbContext,
         queryF12Addr,
         &ControllerContext->QueryRegDesc
@@ -1377,13 +1381,13 @@ configureF12(
             "Failed to read the Query Register Descriptor - %!STATUS!",
             status);
         goto exit;
-    }
+    }*/
     queryF12Addr += 3;
 
     status = RmiReadRegisterDescriptor(
         SpbContext,
         queryF12Addr,
-        &ControllerContext->ControlRegDesc
+        &ControlRegDesc
     );
 
     if(!NT_SUCCESS(status))
@@ -1401,7 +1405,7 @@ configureF12(
     status = RmiReadRegisterDescriptor(
         SpbContext,
         queryF12Addr,
-        &ControllerContext->DataRegDesc
+        &DataRegDesc
     );
 
     if(!NT_SUCCESS(status))
@@ -1416,7 +1420,7 @@ configureF12(
     }
     queryF12Addr += 3;
     ControllerContext->PacketSize = RmiRegisterDescriptorCalcSize(
-        &ControllerContext->DataRegDesc
+        &DataRegDesc
     );
 
     // Skip rmi_f12_read_sensor_tuning for the prototype.
@@ -1428,10 +1432,10 @@ configureF12(
     * attention report check to see if the device is receiving data from
     * HID attention reports.
     */
-    item = RmiGetRegisterDescItem(&ControllerContext->DataRegDesc, 0);
+    item = RmiGetRegisterDescItem(&DataRegDesc, 0);
     if(item) data_offset += (USHORT)item->RegisterSize;
 
-    item = RmiGetRegisterDescItem(&ControllerContext->DataRegDesc, 1);
+    item = RmiGetRegisterDescItem(&DataRegDesc, 1);
     if(item != NULL)
     {
         ControllerContext->Data1Offset = data_offset;
@@ -1462,7 +1466,8 @@ configureF12(
         ControllerContext,
         SpbContext,
         RMI_F12_REPORTING_MODE_CONTINUOUS,
-        NULL);
+        NULL,
+        &ControlRegDesc);
 
     //setup interupt
     ControllerContext->Config.DeviceSettings.InterruptEnable |= 0x1 << index;
