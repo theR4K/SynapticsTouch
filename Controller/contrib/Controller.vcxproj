@@ -107,6 +107,8 @@
     <Inf>
       <SpecifyDriverVerDirectiveVersion>true</SpecifyDriverVerDirectiveVersion>
       <TimeStamp>*</TimeStamp>
+      <DateStamp Condition="'$(Configuration)|$(Platform)'=='Debug|ARM'">12/13/2019</DateStamp>
+      <DateStamp Condition="'$(Configuration)|$(Platform)'=='Release|ARM'">12/13/2019</DateStamp>
     </Inf>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

@@ -160,7 +160,7 @@ TOUCH_DEVICE_RESOLUTION_Y & 0xff,
     END_COLLECTION,                         //   END_COLLECTION
     END_COLLECTION,                         // END_COLLECTION
 #endif
-    USAGE_PAGE, 0x01,                       // USAGE_PAGE (Generic Desktop)
+    /*USAGE_PAGE, 0x01,                       // USAGE_PAGE (Generic Desktop)
     USAGE, 0x06,                            // USAGE (Keyboard)
     BEGIN_COLLECTION, 0x01,                 // COLLECTION (Application)
     REPORT_ID, REPORTID_CAPKEY,             //   REPORT_ID
@@ -176,12 +176,41 @@ TOUCH_DEVICE_RESOLUTION_Y & 0xff,
     REPORT_COUNT, 0x01,                     //   REPORT_COUNT (1)
     REPORT_SIZE, 0x05,                      //   REPORT_SIZE (5)
     INPUT, 0x03,                            //   INPUT (Cnst,Var,Abs)
-    END_COLLECTION,                          // END_COLLECTION
+    END_COLLECTION,                          // END_COLLECTION*/
     
-    //USAGE_PAGE_1, 01,
-    //USAGE_1, 0x0d,
-    //BEGIN_COLLECTION, 0x02,
-    //USAGE_PAGE_1,0x90
+
+        USAGE_PAGE, 0x01,                       // USAGE_PAGE (Generic Desktop)
+        USAGE, 0x06,                            // USAGE (Keyboard)
+        BEGIN_COLLECTION, 0x01,                 // COLLECTION (Application)
+        REPORT_ID, REPORTID_CAPKEY_KEYBOARD,             //   REPORT_ID
+        USAGE_PAGE, 0x07,                       //   USAGE_PAGE (Keyboard)
+        USAGE, 0xe3,                            //   USAGE (Keyboard Left GUI) - Start/Home
+        LOGICAL_MINIMUM, 0x00,                  //   LOGICAL_MINIMUM (0)
+        LOGICAL_MAXIMUM, 0x01,                  //   LOGICAL_MAXIMUM (1)
+        REPORT_SIZE, 0x01,                      //   REPORT_SIZE (1)
+        REPORT_COUNT, 0x01,                     //   REPORT_COUNT (1)
+        INPUT, 0x02,                            //   INPUT (Data,Var,Abs)
+        REPORT_COUNT, 0x01,                     //   REPORT_COUNT (1)
+        REPORT_SIZE, 0x07,                      //   REPORT_SIZE (7)
+        INPUT, 0x03,                            //   INPUT (Cnst,Var,Abs)
+        END_COLLECTION,                          // END_COLLECTION
+
+        USAGE_PAGE, 0x0C,                       // USAGE_PAGE (Consumer)
+        USAGE, 0x01,                            // USAGE (Consumer Control)
+        BEGIN_COLLECTION, 0x01,                 // COLLECTION (Application)
+        REPORT_ID, REPORTID_CAPKEY_CONSUMER,             //   REPORT_ID
+        USAGE_PAGE, 0x0C,                       //   USAGE_PAGE (Consumer)
+        USAGE_16, 0x21, 0x02,                   //   USAGE (SEARCH)        - Search
+        USAGE_16, 0x24, 0x02,                   //   USAGE (BACK)      - Back
+        LOGICAL_MINIMUM, 0x00,                  //   LOGICAL_MINIMUM (0)
+        LOGICAL_MAXIMUM, 0x01,                  //   LOGICAL_MAXIMUM (1)
+        REPORT_SIZE, 0x01,                      //   REPORT_SIZE (1)
+        REPORT_COUNT, 0x02,                     //   REPORT_COUNT (2)
+        INPUT, 0x02,                            //   INPUT (Data,Var,Abs)
+        REPORT_COUNT, 0x01,                     //   REPORT_COUNT (1)
+        REPORT_SIZE, 0x06,                      //   REPORT_SIZE (6)
+        INPUT, 0x03,                            //   INPUT (Cnst,Var,Abs)
+        END_COLLECTION,                          // END_COLLECTION
 };
 const ULONG gdwcbReportDescriptor = sizeof(gReportDescriptor);
 

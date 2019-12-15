@@ -121,18 +121,32 @@ Return Value:
     //
     // Update button states. This mapping should be made registry configurable
     //
-    HidReport->ReportID = REPORTID_CAPKEY;
-    hidKeys = &(HidReport->KeyReport);
-    hidKeys->InputReport.bKeys |= (dataF1A.Button0) ? KEY_DOWN_SEARCH : 0;
-    hidKeys->InputReport.bKeys |= (dataF1A.Button1) ? KEY_DOWN_START : 0;
-    hidKeys->InputReport.bKeys |= (dataF1A.Button2) ? KEY_DOWN_BACK : 0;
 
+    hidKeys = &(HidReport->KeyReport);
+    hidKeys->bKeys = 0;
+
+    RMI4_F1A_DATA_REGISTERS prevDataF1A;
+    prevDataF1A.Raw = ControllerContext->prevKeyState;
+    ControllerContext->prevKeyState = dataF1A.Raw;
+
+    if(dataF1A.Button1 != prevDataF1A.Button1)
+    {
+        HidReport->ReportID = REPORTID_CAPKEY_KEYBOARD;
+        hidKeys->bKeys |= (dataF1A.Button1) ? (1 << 0) : 0;
+        goto exit;
+    }
+    if(dataF1A.Button0 != prevDataF1A.Button0 || dataF1A.Button2 != prevDataF1A.Button2)
+    {
+        HidReport->ReportID = REPORTID_CAPKEY_CONSUMER;
+        hidKeys->bKeys |= (dataF1A.Button0) ? (1 << 0) : 0;
+        hidKeys->bKeys |= (dataF1A.Button2) ? (1 << 1) : 0;
+    }
     //
     // On return of success, this request will be completed up the stack
     //
 
 exit:
-	//DbgPrintEx(DPFLTR_IHVDRIVER_ID, DPFLTR_ERROR_LEVEL, "ST: butons interupt %x, %x\n", status, dataF1A);
+    //DbgPrintEx(DPFLTR_IHVDRIVER_ID, DPFLTR_ERROR_LEVEL, "ST: butons interupt %x, %x\n", status, dataF1A);
     return status;
 }
 

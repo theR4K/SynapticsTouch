@@ -151,13 +151,16 @@ typedef struct _RMI4_CONTROLLER_CONTEXT
     //
     BKL_CONTEXT* BklContext;
 
-	//rmi4 f12
-	BOOLEAN F12Flag;
+    //rmi4 f12
+    BOOLEAN F12Flag;
 
-	size_t PacketSize;
+    size_t PacketSize;
 
-	USHORT Data1Offset;
-	BYTE MaxFingers;
+    USHORT Data1Offset;
+    BYTE MaxFingers;
+
+    //cap keys f1a
+    BYTE prevKeyState;
 
 } RMI4_CONTROLLER_CONTEXT;
 

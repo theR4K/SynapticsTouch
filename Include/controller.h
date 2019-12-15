@@ -60,7 +60,8 @@
 #define REPORTID_MOUSE                  3
 #define REPORTID_FEATURE                7
 #define REPORTID_MAX_COUNT              8
-#define REPORTID_CAPKEY                 2
+#define REPORTID_CAPKEY_KEYBOARD        4
+#define REPORTID_CAPKEY_CONSUMER        5
 
 // 
 // Type defintions
@@ -106,14 +107,7 @@ typedef struct _HID_MOUSE_REPORT {
 } HID_MOUSE_REPORT, *PHID_MOUSE_REPORT;
 
 typedef struct _HID_KEY_REPORT {
-    union
-    {
-        struct
-        {
-            UCHAR  bKeys;
-        }InputReport;
-        UCHAR RawInput[1];
-    };
+    UCHAR  bKeys;
 } HID_KEY_REPORT, *PHID_KEY_REPORT;
 
 
