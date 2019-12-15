@@ -71,20 +71,21 @@
 #pragma warning(disable:4201)  // (nameless struct/union)
 #include <pshpack1.h>
 
+typedef struct _HID_CONTACT_POINT
+{
+    UCHAR  bStatus;
+    UCHAR  ContactId;
+    USHORT wXData;
+    USHORT wYData;
+} HID_CONTACT_POINT;
+
 typedef struct _HID_TOUCH_REPORT
 {
     union
     {
         struct
         {
-            UCHAR  bStatus;
-            UCHAR  ContactId;
-            USHORT wXData;
-            USHORT wYData;            
-            UCHAR  bStatus2;
-            UCHAR  ContactId2;
-            USHORT wXData2;
-            USHORT wYData2;
+            HID_CONTACT_POINT Contacts[2];
             UCHAR  ActualCount;
             USHORT ScanTime;
         } InputReport;

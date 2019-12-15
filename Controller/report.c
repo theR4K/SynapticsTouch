@@ -202,10 +202,15 @@ Return Value:
 --*/
 {
     PHID_TOUCH_REPORT hidTouch = NULL;
-    int currentlyReporting;
 
     HidReport->ReportID = REPORTID_MTOUCH;
     hidTouch = &(HidReport->TouchReport);
+
+    int currentFingerIndex;
+    int fingersToReport = min(TouchesTotal - *TouchesReported, 2);
+    USHORT SctatchX = 0, ScratchY = 0;
+
+    HidReport->ReportID = REPORTID_MTOUCH;
 
     //
     // There are only 16-bits for ScanTime, truncate it
@@ -213,80 +218,63 @@ Return Value:
     hidTouch->InputReport.ScanTime = Cache->ScanTime & 0xFFFF;
 
     //
-    // Report the next available finger
+    // Report the count
+    // We're sending touches using hybrid mode with 2 fingers in our
+    // report descriptor. The first report must indicate the
+    // total count of touch fingers detected by the digitizer.
+    // The remaining reports must indicate 0 for the count.
+    // The first report will have the TouchesReported integer set to 0
+    // The others will have it set to something else.
     //
-    currentlyReporting = Cache->FingerDownOrder[*TouchesReported];
-
-    hidTouch->InputReport.ContactId = (UCHAR) currentlyReporting;
-    hidTouch->InputReport.wXData = (USHORT) Cache->FingerSlot[currentlyReporting].x;
-    hidTouch->InputReport.wYData = (USHORT) Cache->FingerSlot[currentlyReporting].y;
-
-    //
-    // Perform per-platform x/y adjustments to controller coordinates
-    //
-    TchTranslateToDisplayCoordinates(
-        &hidTouch->InputReport.wXData,
-        &hidTouch->InputReport.wYData,
-        Props);
-
-    if (Cache->FingerSlot[currentlyReporting].fingerStatus)
+    if (*TouchesReported == 0)
     {
-        hidTouch->InputReport.bStatus = FINGER_STATUS;
+        hidTouch->InputReport.ActualCount = (UCHAR)TouchesTotal;
+    }
+    else
+    {
+        hidTouch->InputReport.ActualCount = 0;
     }
 
-    (*TouchesReported)++;
-
     //
-    // A single HID report can contain two touches, so see if there's more
+    // Only two fingers supported yet
     //
-    if (TouchesTotal - *TouchesReported > 0)
+    for (currentFingerIndex = 0; currentFingerIndex < fingersToReport; currentFingerIndex++)
     {
-        currentlyReporting = Cache->FingerDownOrder[*TouchesReported];
+        int currentlyReporting = Cache->FingerDownOrder[*TouchesReported];
 
-        hidTouch->InputReport.ContactId2 = (UCHAR) currentlyReporting;
-        hidTouch->InputReport.wXData2 = (USHORT) Cache->FingerSlot[currentlyReporting].x;
-        hidTouch->InputReport.wYData2 = (USHORT) Cache->FingerSlot[currentlyReporting].y;
+        hidTouch->InputReport.Contacts[currentFingerIndex].ContactId = (UCHAR)currentlyReporting;
+        SctatchX = (USHORT)Cache->FingerSlot[currentlyReporting].x;
+        ScratchY = (USHORT)Cache->FingerSlot[currentlyReporting].y;
 
         //
         // Perform per-platform x/y adjustments to controller coordinates
         //
         TchTranslateToDisplayCoordinates(
-            &hidTouch->InputReport.wXData2,
-            &hidTouch->InputReport.wYData2,
+            &SctatchX,
+            &ScratchY,
             Props);
+
+        hidTouch->InputReport.Contacts[currentFingerIndex].wXData = SctatchX;
+        hidTouch->InputReport.Contacts[currentFingerIndex].wYData = ScratchY;
 
         if (Cache->FingerSlot[currentlyReporting].fingerStatus)
         {
-            hidTouch->InputReport.bStatus2 = FINGER_STATUS;
+            hidTouch->InputReport.Contacts[currentFingerIndex].bStatus = FINGER_STATUS;
         }
 
         (*TouchesReported)++;
-    }
 
-    //
-    // Though a single HID report can contain up to two touches, but more
-    // can be on the screen, ActualCount reflects the total number
-    // of touches that will be reported when the first report (of possibly
-    // many) is sent up
-    //
-    if (*TouchesReported == 1 || *TouchesReported == 2)
-    {
-        hidTouch->InputReport.ActualCount = (UCHAR) TouchesTotal;
+        Trace(
+            TRACE_LEVEL_NOISE,
+            TRACE_FLAG_REPORTING,
+            "ActualCount %d, ContactId %u X %u Y %u Tip %u",
+            hidTouch->InputReport.ActualCount,
+            hidTouch->InputReport.Contacts[currentFingerIndex].ContactId,
+            hidTouch->InputReport.Contacts[currentFingerIndex].wXData,
+            hidTouch->InputReport.Contacts[currentFingerIndex].wYData,
+            hidTouch->InputReport.Contacts[currentFingerIndex].bStatus
+        );
     }
-
-    /*Trace(
-        TRACE_LEVEL_NOISE,
-        TRACE_FLAG_REPORTING,
-        "ActualCount %d, Touch0 ContactId %u X %u Y %u Tip %u, Touch1 ContactId %u X %u Y %u Tip %u",
-        hidTouch->InputReport.ActualCount,
-        hidTouch->InputReport.ContactId,
-        hidTouch->InputReport.wXData,
-        hidTouch->InputReport.wYData,
-        hidTouch->InputReport.bStatus,
-        hidTouch->InputReport.ContactId2,
-        hidTouch->InputReport.wXData2,
-        hidTouch->InputReport.wYData2,
-        hidTouch->InputReport.bStatus2);*/
 }
 
 NTSTATUS

@@ -287,22 +287,37 @@ RmiConfigureFunctions(
 	if(f11Flag && ControllerContext->F12Flag)
 		f11Flag = FALSE;
 
-	if(f11Flag)
-		status = configureF11(ControllerContext, SpbContext);
-	
-	if(!NT_SUCCESS(status))
-	{
-		Trace(
-			TRACE_LEVEL_ERROR,
-			TRACE_FLAG_INIT,
-			"error can't configure f11 - STATUS %x",
-			status
-		);
-		goto exit;
-	}
+    if (f11Flag)
+    {
+        status = configureF11(ControllerContext, SpbContext);
 
+        if (!NT_SUCCESS(status))
+        {
+            Trace(
+                TRACE_LEVEL_ERROR,
+                TRACE_FLAG_INIT,
+                "Error can't configure F11 - STATUS %x",
+                status
+            );
+            goto exit;
+        }
+    }
+	
 	if(ControllerContext->F12Flag)
-		status = configureF12(ControllerContext, SpbContext);
+    {
+        status = configureF12(ControllerContext, SpbContext);
+
+        if (!NT_SUCCESS(status))
+        {
+            Trace(
+                TRACE_LEVEL_ERROR,
+                TRACE_FLAG_INIT,
+                "Error can't configure F12 - STATUS %x",
+                status
+            );
+            goto exit;
+        }
+    }
 
 	if(f1aFlag)
 		status = configureF1A(ControllerContext, SpbContext);

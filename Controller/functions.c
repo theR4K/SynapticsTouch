@@ -634,7 +634,7 @@ GetTouchesFromF12(
     BYTE* data1;
     BYTE* controllerData;
 
-    ULONG FingerStatusRegister;
+    ULONG FingerStatusRegister = { 0 };
     RMI4_F12_DATA_POSITION FingerPosRegisters[RMI4_MAX_TOUCHES];
 
     //
@@ -715,11 +715,11 @@ GetTouchesFromF12(
             {
             case RMI_F12_OBJECT_FINGER:
             case RMI_F12_OBJECT_STYLUS:
-                FingerStatusRegister |= 1 << i;
+                FingerStatusRegister |= RMI4_FINGER_STATE_PRESENT_WITH_ACCURATE_POS << i;
                 fingers++;
                 break;
             default:
-                FingerStatusRegister &= 0 << i;
+                //fingerStatus[i] = RMI4_FINGER_STATE_NOT_PRESENT;
                 break;
             }
 
@@ -730,14 +730,6 @@ GetTouchesFromF12(
             FingerPosRegisters[i].Y = y;
 
             data1 += F12_DATA1_BYTES_PER_OBJ;
-        }
-
-        // Intentionally bugcheck to figure out issues
-        if(fingers >= 7)
-        {
-#ifdef INTENTIONAL_BUGCHECK_FOR_DIAGNOSTICS
-            KeBugCheckEx(SOC_SUBSYSTEM_FAILURE, 0, 0, 0, 0);
-#endif
         }
     }
     else
@@ -1091,7 +1083,7 @@ RmiReadRegisterDescriptor(
         item->Register = (USHORT)reg;
         item->RegisterSize = reg_size;
 
-        //map_offset = 0;
+        map_offset = 0;
 
         item->NumSubPackets = 0;
         do
@@ -1100,12 +1092,12 @@ RmiReadRegisterDescriptor(
             {
                 if(struct_buf[offset] & (0x1 << b))
                     item->NumSubPackets++;
-                    //bitmap_set(item->SubPacketMap, map_offset, 1);
-                //++map_offset;
+                    bitmap_set(item->SubPacketMap, map_offset, 1);
+                ++map_offset;
             }
         } while(struct_buf[offset++] & 0x80);
 
-        //item->NumSubPackets = (BYTE)bitmap_weight(item->SubPacketMap, RMI_REG_DESC_SUBPACKET_BITS);
+        item->NumSubPackets = (BYTE)bitmap_weight(item->SubPacketMap, RMI_REG_DESC_SUBPACKET_BITS);
 
         Trace(
             TRACE_LEVEL_INFORMATION,
@@ -1137,6 +1129,158 @@ i2c_read_fail:
 }
 
 NTSTATUS
+RmiSetReportingMode(
+    IN RMI4_CONTROLLER_CONTEXT* ControllerContext,
+    IN SPB_CONTEXT* SpbContext,
+    IN UCHAR NewMode,
+    OUT UCHAR* OldMode,
+    IN PRMI_REGISTER_DESCRIPTOR ControlRegDesc
+)
+/*++
+
+    Routine Description:
+
+        Changes the F12 Reporting Mode on the controller as specified
+
+    Arguments:
+
+        ControllerContext - Touch controller context
+
+        SpbContext - A pointer to the current i2c context
+
+        NewMode - Either RMI_F12_REPORTING_MODE_CONTINUOUS
+                 or RMI_F12_REPORTING_MODE_REDUCED
+
+        OldMode - Old value of reporting mode
+
+    Return Value:
+
+        NTSTATUS indicating success or failure
+
+--*/
+{
+    UCHAR reportingControl[3];
+    int index;
+    NTSTATUS status;
+    UINT8 indexCtrl20;
+
+    //
+    // Find RMI F12 function
+    //
+    index = RmiGetFunctionIndex(
+        ControllerContext->Descriptors,
+        ControllerContext->FunctionCount,
+        RMI4_F12_2D_TOUCHPAD_SENSOR);
+
+    if (index == ControllerContext->FunctionCount)
+    {
+        Trace(
+            TRACE_LEVEL_ERROR,
+            TRACE_INIT,
+            "Set ReportingMode failure - RMI Function 12 missing");
+
+        status = STATUS_INVALID_DEVICE_STATE;
+        goto exit;
+    }
+
+    status = RmiChangePage(
+        ControllerContext,
+        SpbContext,
+        ControllerContext->FunctionOnPage[index]);
+
+    if (!NT_SUCCESS(status))
+    {
+        Trace(
+            TRACE_LEVEL_ERROR,
+            TRACE_INIT,
+            "Could not change register page");
+
+        goto exit;
+    }
+
+    indexCtrl20 = RmiGetRegisterIndex(ControlRegDesc, F12_2D_CTRL20);
+
+    if (indexCtrl20 == ControlRegDesc->NumRegisters)
+    {
+        Trace(
+            TRACE_LEVEL_ERROR,
+            TRACE_INIT,
+            "Cannot find F12_2D_Ctrl20 offset");
+
+        status = STATUS_INVALID_DEVICE_STATE;
+        goto exit;
+    }
+
+    if (ControlRegDesc->Registers[indexCtrl20].RegisterSize != sizeof(reportingControl))
+    {
+        Trace(
+            TRACE_LEVEL_ERROR,
+            TRACE_INIT,
+            "Unexpected F12_2D_Ctrl20 register size");
+
+        status = STATUS_INVALID_DEVICE_STATE;
+        goto exit;
+    }
+
+    //
+    // Read Device Control register
+    //
+    status = SpbReadDataSynchronously(
+        SpbContext,
+        ControllerContext->Descriptors[index].ControlBase + indexCtrl20,
+        &reportingControl,
+        sizeof(reportingControl)
+    );
+
+    if (!NT_SUCCESS(status))
+    {
+        Trace(
+            TRACE_LEVEL_ERROR,
+            TRACE_INIT,
+            "Could not read F12_2D_Ctrl20 register - %!STATUS!",
+            status);
+
+        goto exit;
+    }
+
+    if (OldMode)
+    {
+        *OldMode = reportingControl[0] & RMI_F12_REPORTING_MODE_MASK;
+    }
+
+    //
+    // Assign new value
+    //
+    reportingControl[0] &= ~RMI_F12_REPORTING_MODE_MASK;
+    reportingControl[0] |= NewMode & RMI_F12_REPORTING_MODE_MASK;
+
+    //
+    // Write setting back to the controller
+    //
+    status = SpbWriteDataSynchronously(
+        SpbContext,
+        ControllerContext->Descriptors[index].ControlBase + indexCtrl20,
+        &reportingControl,
+        sizeof(reportingControl)
+    );
+
+    if (!NT_SUCCESS(status))
+    {
+        Trace(
+            TRACE_LEVEL_ERROR,
+            TRACE_INIT,
+            "Could not write F12_2D_Ctrl20 register - %X",
+            status);
+
+        goto exit;
+    }
+
+exit:
+
+    return status;
+}
+
+NTSTATUS
 configureF12(
     IN RMI4_CONTROLLER_CONTEXT *ControllerContext,
     IN SPB_CONTEXT *SpbContext
@@ -1149,7 +1293,7 @@ configureF12(
     char buf;
     USHORT data_offset = 0;
     PRMI_REGISTER_DESC_ITEM item;
-
+    
     RMI_REGISTER_DESCRIPTOR ControlRegDesc;
     RMI_REGISTER_DESCRIPTOR DataRegDesc;
 
@@ -1208,7 +1352,7 @@ configureF12(
 
     ++queryF12Addr;
 
-    if(!(buf & 0x1))
+    if(!(buf & BIT(0)))
     {
         Trace(
             TRACE_LEVEL_ERROR,
@@ -1220,7 +1364,7 @@ configureF12(
         goto exit;
     }
 
-    //!!//ControllerContext->HasDribble = !!(buf & BIT(3));
+    //ControllerContext->HasDribble = !!(buf & BIT(3));
 
     /*status = RmiReadRegisterDescriptor(
         SpbContext,
@@ -1315,88 +1459,15 @@ configureF12(
         goto exit;
     }
 
-
-    //set reporting mode
-    UCHAR reportingControl[3];
-    UINT8 indexCtrl20;
-
-    indexCtrl20 = RmiGetRegisterIndex(&ControlRegDesc, F12_2D_CTRL20);
-
-    if(indexCtrl20 == ControlRegDesc.NumRegisters)
-    {
-        Trace(
-            TRACE_LEVEL_ERROR,
-            TRACE_INIT,
-            "Cannot find F12_2D_Ctrl20 offset");
-
-        status = STATUS_INVALID_DEVICE_STATE;
-        goto exit;
-    }
-
-    if(ControlRegDesc.Registers[indexCtrl20].RegisterSize != sizeof(reportingControl))
-    {
-        Trace(
-            TRACE_LEVEL_ERROR,
-            TRACE_INIT,
-            "Unexpected F12_2D_Ctrl20 register size");
-
-        status = STATUS_INVALID_DEVICE_STATE;
-        goto exit;
-    }
-
     //
-    // Read Device Control register
+    // Try to set continuous reporting mode during touch
     //
-    status = SpbReadDataSynchronously(
+    RmiSetReportingMode(
+        ControllerContext,
         SpbContext,
-        ControllerContext->Descriptors[index].ControlBase + indexCtrl20,
-        &reportingControl,
-        sizeof(reportingControl)
-    );
-
-    if(!NT_SUCCESS(status))
-    {
-        Trace(
-            TRACE_LEVEL_ERROR,
-            TRACE_INIT,
-            "Could not read F12_2D_Ctrl20 register - %!STATUS!",
-            status);
-
-        goto exit;
-    }
-
-    //if(OldMode)
-    //{
-    //	*OldMode = reportingControl[0] & RMI_F12_REPORTING_MODE_MASK;
-    //}
-
-    //
-    // Assign new value
-    //
-    reportingControl[0] &= ~RMI_F12_REPORTING_MODE_MASK;
-    //reportingControl[0] |= NewMode & RMI_F12_REPORTING_MODE_MASK;
-    reportingControl[0] |= RMI_F12_REPORTING_MODE_CONTINUOUS & RMI_F12_REPORTING_MODE_MASK;
-
-    //
-    // Write setting back to the controller
-    //
-    status = SpbWriteDataSynchronously(
-        SpbContext,
-        ControllerContext->Descriptors[index].ControlBase + indexCtrl20,
-        &reportingControl,
-        sizeof(reportingControl)
-    );
-
-    if(!NT_SUCCESS(status))
-    {
-        Trace(
-            TRACE_LEVEL_ERROR,
-            TRACE_INIT,
-            "Could not write F12_2D_Ctrl20 register - %X",
-            status);
-
-        goto exit;
-    }
+        RMI_F12_REPORTING_MODE_CONTINUOUS,
+        NULL,
+        &ControlRegDesc);
 
     //setup interupt
     ControllerContext->Config.DeviceSettings.InterruptEnable |= 0x1 << index;
