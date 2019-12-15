@@ -39,7 +39,7 @@ static RMI4_CONFIGURATION gDefaultConfiguration =
         1,                                              // No Sleep (do sleep)
         0,                                              // Report Rate (standard)
         1,                                              // Configured
-        0xff,                                            // Interrupt Enable
+        0xf,                                            // Interrupt Enable
         RMI4_MILLISECONDS_TO_TENTH_MILLISECONDS(20),    // Doze Interval
         10,                                             // Doze Threshold
         RMI4_SECONDS_TO_HALF_SECONDS(2)                 // Doze Holdoff
