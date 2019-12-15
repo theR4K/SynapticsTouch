@@ -29,7 +29,8 @@ NTSTATUS
 RmiServiceCapacitiveButtonInterrupt(
     IN RMI4_CONTROLLER_CONTEXT* ControllerContext,
     IN SPB_CONTEXT* SpbContext,
-    IN PHID_INPUT_REPORT HidReport
+    IN PHID_INPUT_REPORT HidReport,
+    OUT BOOLEAN* PendingTouches
     )
 /*++
 
@@ -55,6 +56,8 @@ Return Value:
     PHID_KEY_REPORT hidKeys;
     int index;
     NTSTATUS status;
+    //USHORT timeNow = 0;
+
     //
     // If the controller doesn't support buttons, ignore this interrupt
     //
@@ -123,16 +126,31 @@ Return Value:
     //
 
     hidKeys = &(HidReport->KeyReport);
-    hidKeys->bKeys = 0;
+
+    if(ControllerContext->capButtonsCache.PendingState >> 7)
+    {
+        HidReport->ReportID = REPORTID_CAPKEY_CONSUMER;
+        hidKeys->bKeys = ControllerContext->capButtonsCache.PendingState & 0xF;
+        ControllerContext->capButtonsCache.PendingState = 0;
+        goto exit;
+    }
 
     RMI4_F1A_DATA_REGISTERS prevDataF1A;
-    prevDataF1A.Raw = ControllerContext->prevKeyState;
-    ControllerContext->prevKeyState = dataF1A.Raw;
+    prevDataF1A.Raw = ControllerContext->capButtonsCache.prevPhysicalState;
+    ControllerContext->capButtonsCache.prevPhysicalState = dataF1A.Raw;
+
 
     if(dataF1A.Button1 != prevDataF1A.Button1)
     {
         HidReport->ReportID = REPORTID_CAPKEY_KEYBOARD;
         hidKeys->bKeys |= (dataF1A.Button1) ? (1 << 0) : 0;
+        if(dataF1A.Button0 != prevDataF1A.Button0 || dataF1A.Button2 != prevDataF1A.Button2)
+        {
+            ControllerContext->capButtonsCache.PendingState |= (dataF1A.Button0) ? (1 << 0) : 0;
+            ControllerContext->capButtonsCache.PendingState |= (dataF1A.Button2) ? (1 << 1) : 0;
+            ControllerContext->capButtonsCache.PendingState |= (1 << 7); //indicate waiting buttons
+            *PendingTouches = TRUE;
+        }
         goto exit;
     }
     if(dataF1A.Button0 != prevDataF1A.Button0 || dataF1A.Button2 != prevDataF1A.Button2)
@@ -146,7 +164,6 @@ Return Value:
     //
 
 exit:
-    //DbgPrintEx(DPFLTR_IHVDRIVER_ID, DPFLTR_ERROR_LEVEL, "ST: butons interupt %x, %x\n", status, dataF1A);
     return status;
 }
 
@@ -318,22 +335,22 @@ Return Value:
     //
     if (ControllerContext->TouchesReported == ControllerContext->TouchesTotal)
     {
-		if(ControllerContext->F12Flag)
-			status = GetTouchesFromF12(ControllerContext, SpbContext);
-		else
-			status = GetTouchesFromF11(ControllerContext,SpbContext);
+        if(ControllerContext->F12Flag)
+            status = GetTouchesFromF12(ControllerContext, SpbContext);
+        else
+            status = GetTouchesFromF11(ControllerContext,SpbContext);
 
-		if(!NT_SUCCESS(status))
-		{
-			Trace(
-				TRACE_LEVEL_ERROR,
-				TRACE_FLAG_SAMPLES,
-				"Error. Can't GetTouches from controller - STATUS %x",
-				status
-			);
+        if(!NT_SUCCESS(status))
+        {
+            Trace(
+                TRACE_LEVEL_ERROR,
+                TRACE_FLAG_SAMPLES,
+                "Error. Can't GetTouches from controller - STATUS %x",
+                status
+            );
 
-			goto exit;
-		}
+            goto exit;
+        }
 
         //
         // Prepare to report touches via HID reports
@@ -499,13 +516,22 @@ Return Value:
     //
     if (controller->InterruptStatus & RMI4_INTERRUPT_BIT_0D_CAP_BUTTON)
     {
+        BOOLEAN pendingTouches = FALSE;
+
         status = RmiServiceCapacitiveButtonInterrupt(
             ControllerContext,
             SpbContext,
-            HidReport);
-
-        controller->InterruptStatus &= ~RMI4_INTERRUPT_BIT_0D_CAP_BUTTON;
-
+            HidReport,
+            &pendingTouches);
+        
+        //
+        // If there are more touches to report, servicing is incomplete
+        //
+        if(pendingTouches == FALSE)
+        {
+            controller->InterruptStatus &= ~RMI4_INTERRUPT_BIT_0D_CAP_BUTTON;
+        }
+        
         //
         // Success indicates the report is ready to be sent, otherwise,
         // continue to service interrupts.

@@ -87,9 +87,9 @@ typedef struct _RMI4_F1A_DATA_REGISTERS
 
 typedef struct _RMI4_F1A_CACHE
 {
-    BYTE prevButtonsState;
-
-};
+    BYTE prevPhysicalState;
+    BYTE PendingState;
+} RMI4_F1A_CACHE;
 
 //Debug
 /*

@@ -202,6 +202,7 @@ TOUCH_DEVICE_RESOLUTION_Y & 0xff,
         USAGE_PAGE, 0x0C,                       //   USAGE_PAGE (Consumer)
         USAGE_16, 0x21, 0x02,                   //   USAGE (SEARCH)        - Search
         USAGE_16, 0x24, 0x02,                   //   USAGE (BACK)      - Back
+        USAGE_16, 0x83, 0x01,                   //   USAGE (CONFIGURATION)        - Start Alt
         LOGICAL_MINIMUM, 0x00,                  //   LOGICAL_MINIMUM (0)
         LOGICAL_MAXIMUM, 0x01,                  //   LOGICAL_MAXIMUM (1)
         REPORT_SIZE, 0x01,                      //   REPORT_SIZE (1)

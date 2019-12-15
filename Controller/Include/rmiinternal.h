@@ -160,7 +160,7 @@ typedef struct _RMI4_CONTROLLER_CONTEXT
     BYTE MaxFingers;
 
     //cap keys f1a
-    BYTE prevKeyState;
+    RMI4_F1A_CACHE capButtonsCache;
 
 } RMI4_CONTROLLER_CONTEXT;
 
