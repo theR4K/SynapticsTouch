@@ -144,8 +144,8 @@ typedef struct _RMI4_CONTROLLER_CONTEXT
 	//
 	// Current touch state
 	//
-	ULONG TouchesReported;
-	ULONG TouchesTotal;
+	int TouchesReported;
+	int TouchesTotal;
 	RMI4_FINGER_CACHE FingerCache;
 
 	//
@@ -175,8 +175,8 @@ RmiCheckInterrupts(
 ULONG
 RmiGetFunctionIndex(
 	IN RMI4_FUNCTION_DESCRIPTOR* FunctionDescriptors,
-	IN ULONG FunctionCount,
-	IN ULONG FunctionDesired
+	IN int FunctionCount,
+	IN int FunctionDesired
 );
 
 NTSTATUS

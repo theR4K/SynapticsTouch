@@ -97,8 +97,8 @@ RmiChangePage(
 ULONG
 RmiGetFunctionIndex(
 	IN RMI4_FUNCTION_DESCRIPTOR* FunctionDescriptors,
-	IN ULONG FunctionCount,
-	IN ULONG FunctionDesired
+	IN int FunctionCount,
+	IN int FunctionDesired
 )
 /*++
 

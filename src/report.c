@@ -32,8 +32,8 @@ RmiFillNextHidReportFromCache(
 	IN PHID_INPUT_REPORT HidReport,
 	IN RMI4_FINGER_CACHE* Cache,
 	IN PTOUCH_SCREEN_PROPERTIES Props,
-	IN PULONG TouchesReported,
-	IN ULONG TouchesTotal
+	IN int* TouchesReported,
+	IN int TouchesTotal
 )
 /*++
 
