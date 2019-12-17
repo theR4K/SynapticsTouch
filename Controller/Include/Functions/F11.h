@@ -138,17 +138,6 @@ typedef struct _RMI4_F11_DATA_POSITION
 	BYTE ZAmplitude;
 } RMI4_F11_DATA_POSITION, *PRMI4_F11_DATA_POSITION;
 
-typedef struct _RMI4_F11_DATA_REGISTERS_STATUS_BLOCK_STATESET
-{
-	struct
-	{
-		BYTE FingerState0 : 2;
-		BYTE FingerState1 : 2;
-		BYTE FingerState2 : 2;
-		BYTE FingerState3 : 2;
-	};
-} RMI4_F11_DATA_REGISTERS_STATUS_BLOCK_STATESET;
-
 //
 // Logical structure for getting registry config settings
 //
