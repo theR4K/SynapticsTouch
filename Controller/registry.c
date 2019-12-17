@@ -39,7 +39,7 @@ static RMI4_CONFIGURATION gDefaultConfiguration =
         1,                                              // No Sleep (do sleep)
         0,                                              // Report Rate (standard)
         1,                                              // Configured
-        0xff,                                            // Interrupt Enable
+        0xf,                                            // Interrupt Enable
         RMI4_MILLISECONDS_TO_TENTH_MILLISECONDS(20),    // Doze Interval
         10,                                             // Doze Threshold
         RMI4_SECONDS_TO_HALF_SECONDS(2)                 // Doze Holdoff
@@ -544,54 +544,6 @@ static const ULONG gcRegistryTable =
     sizeof(gRegistryTable) / sizeof(gRegistryTable[0]);
 
 
-VOID
-RegistryChkOrDefault(
-    WDFKEY key,
-    PRTL_QUERY_REGISTRY_TABLE regTable
-)
-{
-    int i = 0;
-    NTSTATUS status;
-
-    for(; regTable[i].Name != NULL; i++)
-    {
-        PUNICODE_STRING uString = NULL;
-        RtlUnicodeStringInit(uString, regTable[i].Name);
-        status = WdfRegistryQueryValue(
-            key,
-            uString,
-            regTable[i].DefaultLength,
-            regTable[i].EntryContext,
-            NULL,
-            &regTable[i].DefaultType
-        );
-
-        if(!NT_SUCCESS(status))
-        {
-            if(status == STATUS_OBJECT_NAME_NOT_FOUND)
-            {
-                *(PUINT32)regTable[i].EntryContext = *(PUINT32)regTable[i].DefaultData;
-
-                status =WdfRegistryAssignValue(
-                    key,
-                    uString,
-                    regTable[i].DefaultType,
-                    regTable[i].DefaultLength,
-                    regTable[i].DefaultData
-                );
-
-                if(!NT_SUCCESS(status))
-                {
-                    //report error
-                    Trace(TRACE_LEVEL_ERROR, TRACE_FLAG_REGISTRY, "error writing to registry key: %s - STATUS: %x", regTable[i].Name, status);
-                }
-            }
-            //report error
-            Trace(TRACE_LEVEL_ERROR, TRACE_FLAG_REGISTRY, "error unexpecter query status key: %s - STATUS: %x", regTable[i].Name, status);
-        }
-    }
-}
-
 NTSTATUS
 TchRegistryGetControllerSettings(
     IN VOID* ControllerContext,
@@ -637,7 +589,7 @@ TchRegistryGetControllerSettings(
 
     status = WdfDeviceOpenRegistryKey(
         FxDevice,
-        PLUGPLAY_REGKEY_DEVICE,
+        PLUGPLAY_REGKEY_DRIVER,
         KEY_READ,
         WDF_NO_OBJECT_ATTRIBUTES,
         &key);
@@ -653,12 +605,10 @@ TchRegistryGetControllerSettings(
         goto exit;
     }
 
-    status = WdfRegistryCreateKey(
+   status = WdfRegistryOpenKey(
         key,
         &subkeyName,
-        KEY_ALL_ACCESS,
-        0,
-        NULL,
+        KEY_READ,
         WDF_NO_OBJECT_ATTRIBUTES,
         &subkey);
 
@@ -667,7 +617,7 @@ TchRegistryGetControllerSettings(
         Trace(
             TRACE_LEVEL_ERROR,
             TRACE_FLAG_REGISTRY,
-            "Error opening device registry subkey - STATUS:%X",
+            "Error opening device registry subkey - STATUS:%X",//ST//
             status);
 
         goto exit;
@@ -740,18 +690,16 @@ exit:
         // Revert to default configuration values if there was an
         // issue reading configuration data from the registry
         //
-        //RtlCopyMemory(
-         //   &controller->Config,
-         //   &gDefaultConfiguration,
+        RtlCopyMemory(
+            &controller->Config,
+            &gDefaultConfiguration,
+            sizeof(RMI4_CONFIGURATION));
 
         Trace(
             TRACE_LEVEL_WARNING,
             TRACE_FLAG_REGISTRY,
-            "Error reading registry config, writing defaults to registry! - STATUS:%X",
+            "Error reading registry config, using defaults! - STATUS:%X",//ST//
             status);
-
-        RegistryChkOrDefault(key, regTable);
-
 
         status = STATUS_SUCCESS;
     }

@@ -27,6 +27,44 @@
 #include "rmiinternal.h"
 //#include "hid.tmh"
 
+#define SYNAPTICS_TCH_FINGER \
+        BEGIN_COLLECTION, 0x02,                 /*   COLLECTION (Logical) */ \
+            LOGICAL_MAXIMUM, 0x01,                  /*     LOGICAL_MAXIMUM (1) */ \
+            USAGE, 0x42,                            /*     USAGE (Tip Switch) */ \
+            REPORT_COUNT, 0x01,                     /*     REPORT_COUNT (1) */ \
+            REPORT_SIZE, 0x01,                      /*     REPORT_SIZE (1) */ \
+            INPUT, 0x02,                            /*       INPUT (Data,Var,Abs) */ \
+            USAGE, 0x32,                            /*     USAGE (In Range) */ \
+            INPUT, 0x02,                            /*     INPUT (Data,Var,Abs) */ \
+            REPORT_COUNT, 0x06,                     /*     REPORT_COUNT (6) */ \
+            INPUT, 0x03,                            /*       INPUT (Cnst,Ary,Abs) */ \
+            REPORT_SIZE, 0x08,                      /*     REPORT_SIZE (8) */ \
+            USAGE, 0x51,                            /*     USAGE (Contact Identifier) */ \
+            REPORT_COUNT, 0x01,                     /*     REPORT_COUNT (1) */ \
+            INPUT, 0x02,                            /*       INPUT (Data,Var,Abs) */ \
+                                                    \
+		    USAGE_PAGE, 0x01,                       /* Usage Page: Generic Desktop */ \
+		    LOGICAL_MAXIMUM_2, \
+                    TOUCH_DEVICE_RESOLUTION_X & 0xff, \
+                    (TOUCH_DEVICE_RESOLUTION_X >> 8) & 0xff, \
+		    REPORT_SIZE, 0x10,                      /* Report Size: 0x10 (2 bytes) */ \
+		    UNIT_EXPONENT, 0x0e,                    /* Unit exponent: -2 */ \
+		    UNIT, 0x11,                             /* Unit: SI Length (cm) */ \
+		    USAGE, 0x30,                            /* Usage: X */ \
+		    PHYSICAL_MAXIMUM_2, 0xce, 0x02,         /* Physical Maximum: 7.18 */ \
+		    REPORT_COUNT, 0x01,                     /* Report count: 1 */ \
+		    INPUT, 0x02,                            /* Input: (Data, Var, Abs) */ \
+		    PHYSICAL_MAXIMUM_2, 0xeb, 0x04,         /* Physical Maximum: 12.59 */ \
+		    LOGICAL_MAXIMUM_2, \
+                    TOUCH_DEVICE_RESOLUTION_Y & 0xff, \
+                    (TOUCH_DEVICE_RESOLUTION_Y >> 8) & 0xff, \
+		    USAGE, 0x31,                            /* Usage: Y */ \
+		    INPUT, 0x02,                            /* Input: (Data, Var, Abs) */ \
+		    PHYSICAL_MAXIMUM, 0x00,                 /* Physical Maximum: 0 */ \
+		    UNIT_EXPONENT, 0x00,                    /* Unit exponent: 0 */ \
+		    UNIT, 0x00,                             /* Unit: None */ \
+        END_COLLECTION
+
 //
 // HID Report Descriptor for a touch device
 //
@@ -34,187 +72,108 @@ const UCHAR gReportDescriptor[] = {
     USAGE_PAGE, 0x0d,                       // USAGE_PAGE (Digitizers)
     USAGE, 0x04,                            // USAGE (Touch Screen)
     BEGIN_COLLECTION, 0x01,                 // COLLECTION (Application)
-    REPORT_ID, REPORTID_MTOUCH,             //   REPORT_ID (Touch)
-    USAGE, 0x22,                            //   USAGE (Finger)
+        REPORT_ID, REPORTID_MTOUCH,                      //   REPORT_ID (Touch)
 
-    BEGIN_COLLECTION, 0x02,                 //   COLLECTION (Logical)
-    USAGE, 0x42,                            //     USAGE (Tip Switch)
-    LOGICAL_MINIMUM, 0x00,                  //     LOGICAL_MINIMUM (0)
-    LOGICAL_MAXIMUM, 0x01,                  //     LOGICAL_MAXIMUM (1)
-    REPORT_SIZE, 0x01,                      //     REPORT_SIZE (1)
-    REPORT_COUNT, 0x01,                     //     REPORT_COUNT (1)
-    INPUT, 0x02,                            //       INPUT (Data,Var,Abs)
-    REPORT_COUNT, 0x07,                     //     REPORT_COUNT (6)
-    INPUT, 0x03,                            //       INPUT (Cnst,Ary,Abs)
-    REPORT_SIZE, 0x08,                      //     REPORT_SIZE (8)
-    USAGE, 0x51,                            //     USAGE (Contact Identifier)
-    REPORT_COUNT, 0x01,                     //     REPORT_COUNT (1)
-    INPUT, 0x02,                            //       INPUT (Data,Var,Abs)
-    USAGE_PAGE, 0x01,                       //     USAGE_PAGE (Generic Desk..
-    LOGICAL_MAXIMUM_2,
-TOUCH_DEVICE_RESOLUTION_X & 0xff,
-(TOUCH_DEVICE_RESOLUTION_X >> 8) & 0xff,    //     LOGICAL_MAXIMUM
-    REPORT_SIZE, 0x10,                      //     REPORT_SIZE (16)
-    UNIT_EXPONENT, 0x0e,                    //     UNIT_EXPONENT (-2)
-    UNIT, 0x13,                             //     UNIT (Inch,EngLinear)
-    USAGE, 0x30,                            //     USAGE (X)
-    PHYSICAL_MINIMUM, 0x00,                 //     PHYSICAL_MINIMUM (0)
-    PHYSICAL_MAXIMUM_2, 0x1b, 0x01,         //     PHYSICAL_MAXIMUM (283)
-    INPUT, 0x02,                            //       INPUT (Data,Var,Abs)
-    PHYSICAL_MAXIMUM_2, 0x80, 0x07,         //     PHYSICAL_MAXIMUM (1920)
-    LOGICAL_MAXIMUM_2,
-TOUCH_DEVICE_RESOLUTION_Y & 0xff,
-(TOUCH_DEVICE_RESOLUTION_Y >> 8) & 0xff,    //     LOGICAL_MAXIMUM
-    USAGE, 0x31,                            //     USAGE (Y)
-    INPUT, 0x02,                            //       INPUT (Data,Var,Abs)
-    END_COLLECTION,                         //   END_COLLECTION
+        SYNAPTICS_TCH_FINGER,                            //   Finger 1
 
-    BEGIN_COLLECTION, 0x02,                 //   COLLECTION (Logical)
-    USAGE_PAGE, 0x0d,                       //     USAGE_PAGE (Digitizers)
-    USAGE, 0x42,                            //     USAGE (Tip Switch)
-    LOGICAL_MINIMUM, 0x00,                  //     LOGICAL_MINIMUM (0)
-    LOGICAL_MAXIMUM, 0x01,                  //     LOGICAL_MAXIMUM (1)
-    REPORT_SIZE, 0x01,                      //     REPORT_SIZE (1)
-    REPORT_COUNT, 0x01,                     //     REPORT_COUNT (1)
-    INPUT, 0x02,                            //       INPUT (Data,Var,Abs)
-    USAGE, 0x32,                            //     USAGE (In Range)
-    INPUT, 0x02,                            //     INPUT (Data,Var,Abs)
-    REPORT_COUNT, 0x06,                     //     REPORT_COUNT (6)
-    INPUT, 0x03,                            //       INPUT (Cnst,Ary,Abs)
-    REPORT_SIZE, 0x08,                      //     REPORT_SIZE (8)
-    USAGE, 0x51,                            //     USAGE (Contact Identifier)
-    REPORT_COUNT, 0x01,                     //     REPORT_COUNT (1)
-    INPUT, 0x02,                            //       INPUT (Data,Var,Abs)
-    USAGE_PAGE, 0x01,                       //     USAGE_PAGE (Generic Desk..
-    LOGICAL_MAXIMUM_2,
-TOUCH_DEVICE_RESOLUTION_X & 0xff,
-(TOUCH_DEVICE_RESOLUTION_X >> 8) & 0xff,    //     LOGICAL_MAXIMUM
-    REPORT_SIZE, 0x10,                      //     REPORT_SIZE (16)
-    UNIT_EXPONENT, 0x0e,                    //     UNIT_EXPONENT (-2)
-    UNIT, 0x13,                             //     UNIT (Inch,EngLinear)
-    USAGE, 0x30,                            //     USAGE (X)
-    PHYSICAL_MINIMUM, 0x00,                 //     PHYSICAL_MINIMUM (0)
-    PHYSICAL_MAXIMUM_2, 0x1b, 0x01,         //     PHYSICAL_MAXIMUM (283)
-    INPUT, 0x02,                            //       INPUT (Data,Var,Abs)
-    PHYSICAL_MAXIMUM_2, 0x80, 0x07,         //     PHYSICAL_MAXIMUM (1920)
-    LOGICAL_MAXIMUM_2,
-TOUCH_DEVICE_RESOLUTION_Y & 0xff,
-(TOUCH_DEVICE_RESOLUTION_Y >> 8) & 0xff,    //     LOGICAL_MAXIMUM
-    USAGE, 0x31,                            //     USAGE (Y)
-    INPUT, 0x02,                            //       INPUT (Data,Var,Abs)
-    END_COLLECTION,                         //   END_COLLECTION
+        USAGE_PAGE, 0x0d,                                //   USAGE_PAGE (Digitizers)
+        SYNAPTICS_TCH_FINGER,                            //   Finger 2
 
-    USAGE_PAGE, 0x0d,                       //   USAGE_PAGE (Digitizers)
-    USAGE, 0x54,                            //   USAGE (Actual count)
-    REPORT_COUNT, 0x01,                     //   REPORT_COUNT (1)
-    REPORT_SIZE, 0x08,                      //   REPORT_SIZE (8)
-    INPUT, 0x02,                            //     INPUT (Data,Var,Abs)
-    0x55, 0x0C,                         //   UNIT_EXPONENT (-4)
-    0x66, 0x01, 0x10,                   //   UNIT (Seconds)
-    0x47, 0xff, 0xff, 0x00, 0x00,       //   PHYSICAL_MAXIMUM (65535)
-    0x27, 0xff, 0xff, 0x00, 0x00,       //   LOGICAL_MAXIMUM (65535)
-    0x09, 0x56,                         //   USAGE (Scan Time)
-    0x95, 0x01,                         //   REPORT_COUNT (1)
-    0x75, 0x10,                         //   REPORT_SIZE (16)
-    0x81, 0x02,                         //     INPUT (Data,Var,Abs)
-    REPORT_ID, REPORTID_MAX_COUNT,          //   REPORT_ID (Feature)
-    USAGE, 0x55,                            //   USAGE(Maximum Count)
-    LOGICAL_MAXIMUM, 0x02,                  //   LOGICAL_MAXIMUM (2)
-    FEATURE, 0x02,                          //   FEATURE (Data,Var,Abs)
+        USAGE_PAGE, 0x0d,                                //   USAGE_PAGE (Digitizers)
+        USAGE, 0x54,                                     //   USAGE (Actual count)
+        REPORT_COUNT, 0x01,                              //   REPORT_COUNT (1)
+        REPORT_SIZE, 0x08,                               //   REPORT_SIZE (8)
+        INPUT, 0x02,                                     //     INPUT (Data,Var,Abs)
+        UNIT_EXPONENT, 0x0C,                             //   UNIT_EXPONENT (-4)
+        UNIT_2, 0x01, 0x10,                              //   UNIT (Seconds)
+        PHYSICAL_MAXIMUM_3, 0xff, 0xff, 0x00, 0x00,      //   PHYSICAL_MAXIMUM (65535)
+        LOGICAL_MAXIMUM_3, 0xff, 0xff, 0x00, 0x00,       //   LOGICAL_MAXIMUM (65535)
+        USAGE, 0x56,                                     //   USAGE (Scan Time)
+        REPORT_COUNT, 0x01,                              //   REPORT_COUNT (1)
+        REPORT_SIZE, 0x10,                               //   REPORT_SIZE (16)
+        INPUT, 0x02,                                     //     INPUT (Data,Var,Abs)
+        REPORT_ID, REPORTID_MAX_COUNT,                   //   REPORT_ID (Feature)
+        USAGE, 0x55,                                     //   USAGE(Maximum Count)
+        LOGICAL_MAXIMUM, 0x02,                           //   LOGICAL_MAXIMUM (2)
+        FEATURE, 0x02,                                   //   FEATURE (Data,Var,Abs)
     END_COLLECTION,                         // END_COLLECTION
+
     USAGE, 0x0E,                            // USAGE (Configuration)
     BEGIN_COLLECTION, 0x01,                 // COLLECTION (Application)
-    REPORT_ID, REPORTID_FEATURE,            //   REPORT_ID (Feature)
-    USAGE, 0x22,                            //   USAGE (Finger)
-    BEGIN_COLLECTION, 0x00,                 //   COLLECTION (physical)
-    USAGE, 0x52,                            //     USAGE (Input Mode)
-    USAGE, 0x53,                            //     USAGE (Device Index)
-    LOGICAL_MINIMUM, 0x00,                  //     LOGICAL_MINIMUM (0)
-    LOGICAL_MAXIMUM, 0x0a,                  //     LOGICAL_MAXIMUM (10)
-    REPORT_SIZE, 0x08,                      //     REPORT_SIZE (8)
-    REPORT_COUNT, 0x02,                     //     REPORT_COUNT (2)
-    FEATURE, 0x02,                          //     FEATURE (Data,Var,Abs)
-    END_COLLECTION,                         //   END_COLLECTION
+        REPORT_ID, REPORTID_FEATURE,            //   REPORT_ID (Feature)
+        USAGE, 0x22,                            //   USAGE (Finger)
+        BEGIN_COLLECTION, 0x00,                 //   COLLECTION (physical)
+            USAGE, 0x52,                            //     USAGE (Input Mode)
+            USAGE, 0x53,                            //     USAGE (Device Index)
+            LOGICAL_MINIMUM, 0x00,                  //     LOGICAL_MINIMUM (0)
+            LOGICAL_MAXIMUM, 0x0a,                  //     LOGICAL_MAXIMUM (10)
+            REPORT_SIZE, 0x08,                      //     REPORT_SIZE (8)
+            REPORT_COUNT, 0x02,                     //     REPORT_COUNT (2)
+            FEATURE, 0x02,                          //     FEATURE (Data,Var,Abs)
+        END_COLLECTION,                         //   END_COLLECTION
     END_COLLECTION,                         // END_COLLECTION
+
 #ifdef HID_MOUSE_PATH_SUPPORT
     USAGE_PAGE, 0x01,                       // USAGE_PAGE (Generic Desktop)
     USAGE, 0x02,                            // USAGE (Mouse)
     BEGIN_COLLECTION, 0x01,                 // COLLECTION (Application)
-    REPORT_ID, REPORTID_MOUSE,              //   REPORT_ID (Mouse)
-    USAGE, 0x01,                            //   USAGE (Pointer)
-    BEGIN_COLLECTION, 0x00,                 //   COLLECTION (Physical)
-    USAGE_PAGE, 0x09,                       //     USAGE_PAGE (Button)
-    0x19, 0x01,                             //     USAGE_MINIMUM (Button 1)
-    0x29, 0x02,                             //     USAGE_MAXIMUM (Button 2)
-    LOGICAL_MINIMUM, 0x00,                  //     LOGICAL_MINIMUM (0)
-    LOGICAL_MAXIMUM, 0x01,                  //     LOGICAL_MAXIMUM (1)
-    REPORT_SIZE, 0x01,                      //     REPORT_SIZE (1)
-    REPORT_COUNT, 0x02,                     //     REPORT_COUNT (2)
-    INPUT, 0x02,                            //       INPUT (Data,Var,Abs)
-    REPORT_COUNT, 0x06,                     //     REPORT_COUNT (6)
-    INPUT, 0x03,                            //       INPUT (Cnst,Var,Abs)
-    USAGE_PAGE, 0x01,                       //     USAGE_PAGE (Generic Desktop)
-    USAGE, 0x30,                            //     USAGE (X)
-    USAGE, 0x31,                            //     USAGE (Y)
-    REPORT_SIZE, 0x10,                      //     REPORT_SIZE (16)
-    REPORT_COUNT, 0x02,                     //     REPORT_COUNT (2)
-    LOGICAL_MINIMUM, 0x00,                  //     LOGICAL_MINIMUM (0)
-    LOGICAL_MAXIMUM_2, 0xff, 0x7f,          //     LOGICAL_MAXIMUM (32767)
-    INPUT, 0x02,                            //       INPUT (Data,Var,Abs)
-    END_COLLECTION,                         //   END_COLLECTION
+        REPORT_ID, REPORTID_MOUSE,              //   REPORT_ID (Mouse)
+        USAGE, 0x01,                            //   USAGE (Pointer)
+        BEGIN_COLLECTION, 0x00,                 //   COLLECTION (Physical)
+            USAGE_PAGE, 0x09,                       //     USAGE_PAGE (Button)
+            0x19, 0x01,                             //     USAGE_MINIMUM (Button 1)
+            0x29, 0x02,                             //     USAGE_MAXIMUM (Button 2)
+            LOGICAL_MINIMUM, 0x00,                  //     LOGICAL_MINIMUM (0)
+            LOGICAL_MAXIMUM, 0x01,                  //     LOGICAL_MAXIMUM (1)
+            REPORT_SIZE, 0x01,                      //     REPORT_SIZE (1)
+            REPORT_COUNT, 0x02,                     //     REPORT_COUNT (2)
+            INPUT, 0x02,                            //       INPUT (Data,Var,Abs)
+            REPORT_COUNT, 0x06,                     //     REPORT_COUNT (6)
+            INPUT, 0x03,                            //       INPUT (Cnst,Var,Abs)
+            USAGE_PAGE, 0x01,                       //     USAGE_PAGE (Generic Desktop)
+            USAGE, 0x30,                            //     USAGE (X)
+            USAGE, 0x31,                            //     USAGE (Y)
+            REPORT_SIZE, 0x10,                      //     REPORT_SIZE (16)
+            REPORT_COUNT, 0x02,                     //     REPORT_COUNT (2)
+            LOGICAL_MINIMUM, 0x00,                  //     LOGICAL_MINIMUM (0)
+            LOGICAL_MAXIMUM_2, 0xff, 0x7f,          //     LOGICAL_MAXIMUM (32767)
+            INPUT, 0x02,                            //       INPUT (Data,Var,Abs)
+        END_COLLECTION,                         //   END_COLLECTION
     END_COLLECTION,                         // END_COLLECTION
 #endif
-    /*USAGE_PAGE, 0x01,                       // USAGE_PAGE (Generic Desktop)
-    USAGE, 0x06,                            // USAGE (Keyboard)
-    BEGIN_COLLECTION, 0x01,                 // COLLECTION (Application)
-    REPORT_ID, REPORTID_CAPKEY,             //   REPORT_ID
-    USAGE_PAGE, 0x07,                       //   USAGE_PAGE (Keyboard)
-    USAGE, 0xe3,                            //   USAGE (Keyboard Left GUI) - Start/Home
-    USAGE, 0x3A,                            //   USAGE (Keyboard F1)       - Search
-    USAGE, 0x29,                            //   USAGE (Keyboard ESCAPE)   - Back
-    LOGICAL_MINIMUM, 0x00,                  //   LOGICAL_MINIMUM (0)
-    LOGICAL_MAXIMUM, 0x01,                  //   LOGICAL_MAXIMUM (1)
-    REPORT_SIZE, 0x01,                      //   REPORT_SIZE (1)
-    REPORT_COUNT, 0x03,                     //   REPORT_COUNT (3)
-    INPUT, 0x02,                            //   INPUT (Data,Var,Abs)
-    REPORT_COUNT, 0x01,                     //   REPORT_COUNT (1)
-    REPORT_SIZE, 0x05,                      //   REPORT_SIZE (5)
-    INPUT, 0x03,                            //   INPUT (Cnst,Var,Abs)
-    END_COLLECTION,                          // END_COLLECTION*/
-    
 
         USAGE_PAGE, 0x01,                       // USAGE_PAGE (Generic Desktop)
         USAGE, 0x06,                            // USAGE (Keyboard)
         BEGIN_COLLECTION, 0x01,                 // COLLECTION (Application)
-        REPORT_ID, REPORTID_CAPKEY_KEYBOARD,             //   REPORT_ID
-        USAGE_PAGE, 0x07,                       //   USAGE_PAGE (Keyboard)
-        USAGE, 0xe3,                            //   USAGE (Keyboard Left GUI) - Start/Home
-        LOGICAL_MINIMUM, 0x00,                  //   LOGICAL_MINIMUM (0)
-        LOGICAL_MAXIMUM, 0x01,                  //   LOGICAL_MAXIMUM (1)
-        REPORT_SIZE, 0x01,                      //   REPORT_SIZE (1)
-        REPORT_COUNT, 0x01,                     //   REPORT_COUNT (1)
-        INPUT, 0x02,                            //   INPUT (Data,Var,Abs)
-        REPORT_COUNT, 0x01,                     //   REPORT_COUNT (1)
-        REPORT_SIZE, 0x07,                      //   REPORT_SIZE (7)
-        INPUT, 0x03,                            //   INPUT (Cnst,Var,Abs)
-        END_COLLECTION,                          // END_COLLECTION
+            REPORT_ID, REPORTID_CAPKEY_KEYBOARD,    //   REPORT_ID
+            USAGE_PAGE, 0x07,                       //   USAGE_PAGE (Keyboard)
+            USAGE, 0xe3,                            //   USAGE (Keyboard Left GUI) - Start/Home
+            LOGICAL_MINIMUM, 0x00,                  //   LOGICAL_MINIMUM (0)
+            LOGICAL_MAXIMUM, 0x01,                  //   LOGICAL_MAXIMUM (1)
+            REPORT_SIZE, 0x01,                      //   REPORT_SIZE (1)
+            REPORT_COUNT, 0x01,                     //   REPORT_COUNT (1)
+            INPUT, 0x02,                            //   INPUT (Data,Var,Abs)
+            REPORT_COUNT, 0x01,                     //   REPORT_COUNT (1)
+            REPORT_SIZE, 0x07,                      //   REPORT_SIZE (7)
+            INPUT, 0x03,                            //   INPUT (Cnst,Var,Abs)
+        END_COLLECTION,                         // END_COLLECTION
 
         USAGE_PAGE, 0x0C,                       // USAGE_PAGE (Consumer)
         USAGE, 0x01,                            // USAGE (Consumer Control)
         BEGIN_COLLECTION, 0x01,                 // COLLECTION (Application)
-        REPORT_ID, REPORTID_CAPKEY_CONSUMER,             //   REPORT_ID
-        USAGE_PAGE, 0x0C,                       //   USAGE_PAGE (Consumer)
-        USAGE_16, 0x21, 0x02,                   //   USAGE (SEARCH)        - Search
-        USAGE_16, 0x24, 0x02,                   //   USAGE (BACK)      - Back
-        USAGE_16, 0x83, 0x01,                   //   USAGE (CONFIGURATION)        - Start Alt
-        LOGICAL_MINIMUM, 0x00,                  //   LOGICAL_MINIMUM (0)
-        LOGICAL_MAXIMUM, 0x01,                  //   LOGICAL_MAXIMUM (1)
-        REPORT_SIZE, 0x01,                      //   REPORT_SIZE (1)
-        REPORT_COUNT, 0x02,                     //   REPORT_COUNT (2)
-        INPUT, 0x02,                            //   INPUT (Data,Var,Abs)
-        REPORT_COUNT, 0x01,                     //   REPORT_COUNT (1)
-        REPORT_SIZE, 0x06,                      //   REPORT_SIZE (6)
-        INPUT, 0x03,                            //   INPUT (Cnst,Var,Abs)
+            REPORT_ID, REPORTID_CAPKEY_CONSUMER,    //   REPORT_ID
+            USAGE_PAGE, 0x0C,                       //   USAGE_PAGE (Consumer)
+            USAGE_16, 0x21, 0x02,                   //   USAGE (SEARCH)        - Search
+            USAGE_16, 0x24, 0x02,                   //   USAGE (BACK)          - Back
+            USAGE_16, 0x83, 0x01,                   //   USAGE (CONFIGURATION) - Start Alt
+            LOGICAL_MINIMUM, 0x00,                  //   LOGICAL_MINIMUM (0)
+            LOGICAL_MAXIMUM, 0x01,                  //   LOGICAL_MAXIMUM (1)
+            REPORT_SIZE, 0x01,                      //   REPORT_SIZE (1)
+            REPORT_COUNT, 0x02,                     //   REPORT_COUNT (2)
+            INPUT, 0x02,                            //   INPUT (Data,Var,Abs)
+            REPORT_COUNT, 0x01,                     //   REPORT_COUNT (1)
+            REPORT_SIZE, 0x06,                      //   REPORT_SIZE (6)
+            INPUT, 0x03,                            //   INPUT (Cnst,Var,Abs)
         END_COLLECTION,                          // END_COLLECTION
 };
 const ULONG gdwcbReportDescriptor = sizeof(gReportDescriptor);
