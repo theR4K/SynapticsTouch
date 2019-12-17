@@ -143,27 +143,27 @@ TchGenerateHidReportDescriptor
 			if (*(hidReportDescBuffer + i + 1) == 254 &&
 				*(hidReportDescBuffer + i + 2) == 254)
 			{
-				*(hidReportDescBuffer + i + 1) = touchContext->Props.TouchPhysicalWidth & 0xff;
-				*(hidReportDescBuffer + i + 2) = (touchContext->Props.TouchPhysicalWidth >> 8) & 0xff;
+				*(hidReportDescBuffer + i + 1) = touchContext->Props.DisplayPhysicalWidth & 0xff;
+				*(hidReportDescBuffer + i + 2) = (touchContext->Props.DisplayPhysicalWidth >> 8) & 0xff;
 
 				Trace(
 					TRACE_LEVEL_INFORMATION,
 					TRACE_FLAG_HID,
 					"Set X=%u in %p",
-					touchContext->Props.TouchPhysicalWidth,
+					touchContext->Props.DisplayPhysicalWidth,
 					hidReportDescBuffer + i);
 			}
 			if (*(hidReportDescBuffer + i + 1) == 253 &&
 				*(hidReportDescBuffer + i + 2) == 253)
 			{
-				*(hidReportDescBuffer + i + 1) = touchContext->Props.TouchPhysicalHeight & 0xff;
-				*(hidReportDescBuffer + i + 2) = (touchContext->Props.TouchPhysicalHeight >> 8) & 0xff;
+				*(hidReportDescBuffer + i + 1) = touchContext->Props.DisplayPhysicalHeight & 0xff;
+				*(hidReportDescBuffer + i + 2) = (touchContext->Props.DisplayPhysicalHeight >> 8) & 0xff;
 
 				Trace(
 					TRACE_LEVEL_INFORMATION,
 					TRACE_FLAG_HID,
 					"Set Y=%u in %p",
-					touchContext->Props.TouchPhysicalHeight,
+					touchContext->Props.DisplayPhysicalHeight,
 					hidReportDescBuffer + i);
 			}
 		}
@@ -173,8 +173,8 @@ TchGenerateHidReportDescriptor
 		TRACE_LEVEL_INFORMATION,
 		TRACE_FLAG_HID,
 		"Set X=%u and Y=%u in hidReportDescriptor",
-		touchContext->Props.TouchPhysicalWidth,
-		touchContext->Props.TouchPhysicalHeight);
+		touchContext->Props.DisplayPhysicalWidth,
+		touchContext->Props.DisplayPhysicalHeight);
 
 	//
 	// Use hardcoded Report descriptor
