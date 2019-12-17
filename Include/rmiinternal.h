@@ -74,6 +74,8 @@ typedef struct _RMI4_FUNCTION_DESCRIPTOR
 #define RMI4_INTERRUPT_BIT_2D_TOUCH               0x04
 #define RMI4_INTERRUPT_BIT_0D_CAP_BUTTON          0x20
 
+#define TOUCH_POOL_TAG_F12              (ULONG)'21oT'
+
 //
 // Driver structures
 //

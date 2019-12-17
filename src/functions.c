@@ -135,7 +135,7 @@ RmiReadRegisterDescriptor(
 	Rdesc->Registers = ExAllocatePoolWithTag(
 		NonPagedPoolNx,
 		Rdesc->NumRegisters * sizeof(RMI_REGISTER_DESC_ITEM),
-		TOUCH_POOL_TAG
+		TOUCH_POOL_TAG_F12
 	);
 
 	if (Rdesc->Registers == NULL)
@@ -152,7 +152,7 @@ RmiReadRegisterDescriptor(
 	struct_buf = ExAllocatePoolWithTag(
 		NonPagedPoolNx,
 		Rdesc->StructSize,
-		TOUCH_POOL_TAG
+		TOUCH_POOL_TAG_F12
 	);
 
 	if (struct_buf == NULL)
@@ -232,7 +232,7 @@ RmiReadRegisterDescriptor(
 free_buffer:
 	ExFreePoolWithTag(
 		struct_buf,
-		TOUCH_POOL_TAG
+		TOUCH_POOL_TAG_F12
 	);
 
 exit:

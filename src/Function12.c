@@ -56,7 +56,7 @@ GetTouchesFromF12(
 	controllerData = ExAllocatePoolWithTag(
 		NonPagedPoolNx,
 		ControllerContext->PacketSize,
-		TOUCH_POOL_TAG
+		TOUCH_POOL_TAG_F12
 	);
 
 	if (controllerData == NULL)
@@ -130,7 +130,7 @@ GetTouchesFromF12(
 free_buffer:
 	ExFreePoolWithTag(
 		controllerData,
-		TOUCH_POOL_TAG
+		TOUCH_POOL_TAG_F12
 	);
 
 exit:
