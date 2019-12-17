@@ -53,7 +53,7 @@ Return Value:
 {
 	RMI4_F01_CTRL_REGISTERS* controlF01;
 	UCHAR deviceControl;
-	ULONG index;
+	int index;
 	NTSTATUS status;
 
 	controlF01 = (RMI4_F01_CTRL_REGISTERS*)&deviceControl;

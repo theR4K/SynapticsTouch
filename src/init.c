@@ -45,7 +45,7 @@ NTSTATUS
 RmiChangePage(
 	IN RMI4_CONTROLLER_CONTEXT* ControllerContext,
 	IN SPB_CONTEXT* SpbContext,
-	IN ULONG DesiredPage
+	IN int DesiredPage
 )
 /*++
 
@@ -166,7 +166,7 @@ RmiGetFirmwareVersion(
 
 --*/
 {
-	ULONG index;
+	int index;
 	NTSTATUS status;
 
 	//
@@ -525,7 +525,7 @@ RmiCheckInterrupts(
 --*/
 {
 	RMI4_F01_DATA_REGISTERS data;
-	ULONG index;
+	int index;
 	NTSTATUS status;
 
 	RtlZeroMemory(&data, sizeof(data));

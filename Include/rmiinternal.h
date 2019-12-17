@@ -112,10 +112,10 @@ typedef struct _RMI4_CONTROLLER_CONTEXT
 	//
 	// Controller state
 	//
-	ULONG FunctionCount;
+	int FunctionCount;
 	RMI4_FUNCTION_DESCRIPTOR Descriptors[RMI4_MAX_FUNCTIONS];
-	ULONG FunctionOnPage[RMI4_MAX_FUNCTIONS];
-	ULONG CurrentPage;
+	int FunctionOnPage[RMI4_MAX_FUNCTIONS];
+	int CurrentPage;
 
 	ULONG InterruptStatus;
 
@@ -183,7 +183,7 @@ NTSTATUS
 RmiChangePage(
 	IN RMI4_CONTROLLER_CONTEXT* ControllerContext,
 	IN SPB_CONTEXT* SpbContext,
-	IN ULONG DesiredPage
+	IN int DesiredPage
 );
 
 NTSTATUS

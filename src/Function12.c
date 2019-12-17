@@ -11,7 +11,7 @@ GetTouchesFromF12(
 {
 	NTSTATUS status;
 
-	ULONG index, i, x, y, fingers;
+	int index, i, x, y, fingers;
 
 	BYTE* data1;
 	BYTE* controllerData;
@@ -299,7 +299,7 @@ RmiSetReportingMode(
 --*/
 {
 	UCHAR reportingControl[3];
-	ULONG index;
+	int index;
 	NTSTATUS status;
 	UINT8 indexCtrl20;
 
@@ -355,7 +355,10 @@ RmiSetReportingMode(
 		Trace(
 			TRACE_LEVEL_ERROR,
 			TRACE_INIT,
-			"Unexpected F12_2D_Ctrl20 register size");
+			"Unexpected F12_2D_Ctrl20 register size, size=%lu, expected=%lu",
+			ControlRegDesc->Registers[indexCtrl20].RegisterSize,
+			sizeof(reportingControl)
+		);
 
 		status = STATUS_INVALID_DEVICE_STATE;
 		goto exit;
@@ -425,7 +428,7 @@ RmiConfigureFunction12(
 	IN SPB_CONTEXT* SpbContext
 )
 {
-	ULONG index;
+	int index;
 	NTSTATUS status;
 
 	BYTE queryF12Addr = 0;

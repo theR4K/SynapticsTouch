@@ -50,7 +50,7 @@ Return Value:
 {
 	RMI4_F1A_DATA_REGISTERS dataF1A;
 	PHID_KEY_REPORT hidKeys;
-	ULONG index;
+	int index;
 	NTSTATUS status;
 	//USHORT timeNow = 0;
 

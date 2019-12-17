@@ -19,7 +19,7 @@ GetTouchesFromF11(
 )
 {
 	NTSTATUS status;
-	ULONG index, i;
+	int index, i;
 	ULONG highestSlot;
 
 	ULONG FingerStatusRegister;
@@ -272,7 +272,7 @@ RmiConfigureFunction11(
 )
 {
 	NTSTATUS status;
-	ULONG index;
+	int index;
 
 	RMI4_F11_CTRL_REGISTERS controlF11 = { 0 };
 	RMI4_F11_QUERY1_REGISTERS query1_F11;

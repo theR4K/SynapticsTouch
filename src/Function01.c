@@ -9,7 +9,7 @@ RmiConfigureFunction01(
 	IN SPB_CONTEXT* SpbContext
 )
 {
-	ULONG index;
+	int index;
 	NTSTATUS status;
 
 	RMI4_F01_CTRL_REGISTERS controlF01 = { 0 };

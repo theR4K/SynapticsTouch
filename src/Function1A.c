@@ -10,7 +10,7 @@ RmiConfigureFunction1A(
 {
 	UNREFERENCED_PARAMETER(SpbContext);
 
-	ULONG index;
+	int index;
 	//
 	// Find 0D capacitive button sensor function and configure it if it exists
 	//
