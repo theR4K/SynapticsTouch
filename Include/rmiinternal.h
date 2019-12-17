@@ -172,7 +172,7 @@ RmiCheckInterrupts(
 	IN ULONG* InterruptStatus
 );
 
-ULONG
+int
 RmiGetFunctionIndex(
 	IN RMI4_FUNCTION_DESCRIPTOR* FunctionDescriptors,
 	IN int FunctionCount,
