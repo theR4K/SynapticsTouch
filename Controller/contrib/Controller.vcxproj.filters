@@ -39,9 +39,6 @@
     <ClInclude Include="..\Include\backlight.h">
       <Filter>Headers</Filter>
     </ClInclude>
-    <ClInclude Include="..\Include\bitops.h">
-      <Filter>Headers</Filter>
-    </ClInclude>
     <ClInclude Include="..\Include\common.h">
       <Filter>Headers</Filter>
     </ClInclude>
@@ -66,16 +63,19 @@
     <ClInclude Include="..\Include\Functions\F12.h">
       <Filter>Headers</Filter>
     </ClInclude>
-    <ClInclude Include="..\Include\hweight.h">
-      <Filter>Headers</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Include\resolutions.h">
-      <Filter>Headers</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Include\rmiinternal.h">
-      <Filter>Headers</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\Include\winphoneabi.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\rmiinternal.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\bitops.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\hweight.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\resolutions.h">
       <Filter>Headers</Filter>
     </ClInclude>
   </ItemGroup>

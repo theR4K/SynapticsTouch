@@ -715,7 +715,8 @@ Return Value:
         Trace(
             TRACE_LEVEL_ERROR,
             TRACE_FLAG_OTHER,
-            "Failed to set new HWN state - STATUS:%X",//ST//
+            "Failed to set new HWN state intensity: %u- STATUS:%X",//ST//
+            Intensity,
             status);
     }
 

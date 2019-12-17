@@ -20,6 +20,8 @@
     <ClCompile Include="..\spb.c" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\Include\resolutions.h" />
+    <ClInclude Include="..\..\Include\rmiinternal.h" />
     <ClInclude Include="..\Include\device.h" />
     <ClInclude Include="..\Include\driver.h" />
     <ClInclude Include="..\Include\hid.h" />

@@ -264,6 +264,7 @@ Return Value:
 
         (*TouchesReported)++;
 
+#ifdef COORDS_DEBUG
         Trace(
             TRACE_LEVEL_NOISE,
             TRACE_FLAG_REPORTING,
@@ -274,6 +275,7 @@ Return Value:
             hidTouch->InputReport.Contacts[currentFingerIndex].wYData,
             hidTouch->InputReport.Contacts[currentFingerIndex].bStatus
         );
+#endif
     }
 }
 

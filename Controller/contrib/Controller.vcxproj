@@ -23,17 +23,17 @@
     <ClCompile Include="..\resolutions.c" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\Include\bitops.h" />
     <ClInclude Include="..\..\Include\config.h" />
     <ClInclude Include="..\..\Include\debug.h" />
+    <ClInclude Include="..\..\Include\hweight.h" />
+    <ClInclude Include="..\..\Include\resolutions.h" />
+    <ClInclude Include="..\..\Include\rmiinternal.h" />
     <ClInclude Include="..\..\Include\winphoneabi.h" />
     <ClInclude Include="..\..\Include\controller.h" />
     <ClInclude Include="..\..\Include\spb.h" />
     <ClInclude Include="..\Include\backlight.h" />
-    <ClInclude Include="..\Include\bitops.h" />
     <ClInclude Include="..\Include\common.h" />
-    <ClInclude Include="..\Include\hweight.h" />
-    <ClInclude Include="..\Include\resolutions.h" />
-    <ClInclude Include="..\Include\rmiinternal.h" />
     <ClInclude Include="..\Include\Functions\F01.h" />
     <ClInclude Include="..\Include\Functions\F11.h" />
     <ClInclude Include="..\Include\Functions\F12.h" />

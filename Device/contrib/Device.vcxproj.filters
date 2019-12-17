@@ -60,6 +60,12 @@
     <ClInclude Include="..\Include\hidCommon.h">
       <Filter>Headers</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\Include\rmiinternal.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\resolutions.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Headers">

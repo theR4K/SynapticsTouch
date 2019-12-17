@@ -544,6 +544,54 @@ static const ULONG gcRegistryTable =
     sizeof(gRegistryTable) / sizeof(gRegistryTable[0]);
 
 
+VOID
+RegistryChkOrDefault(
+    WDFKEY key,
+    PRTL_QUERY_REGISTRY_TABLE regTable
+)
+{
+    int i = 0;
+    NTSTATUS status;
+
+    for(; regTable[i].Name != NULL; i++)
+    {
+        PUNICODE_STRING uString = NULL;
+        RtlUnicodeStringInit(uString, regTable[i].Name);
+        status = WdfRegistryQueryValue(
+            key,
+            uString,
+            regTable[i].DefaultLength,
+            regTable[i].EntryContext,
+            NULL,
+            &regTable[i].DefaultType
+        );
+
+        if(!NT_SUCCESS(status))
+        {
+            if(status == STATUS_OBJECT_NAME_NOT_FOUND)
+            {
+                *(PUINT32)regTable[i].EntryContext = *(PUINT32)regTable[i].DefaultData;
+
+                status =WdfRegistryAssignValue(
+                    key,
+                    uString,
+                    regTable[i].DefaultType,
+                    regTable[i].DefaultLength,
+                    regTable[i].DefaultData
+                );
+
+                if(!NT_SUCCESS(status))
+                {
+                    //report error
+                    Trace(TRACE_LEVEL_ERROR, TRACE_FLAG_REGISTRY, "error writing to registry key: %s - STATUS: %x", regTable[i].Name, status);
+                }
+            }
+            //report error
+            Trace(TRACE_LEVEL_ERROR, TRACE_FLAG_REGISTRY, "error unexpecter query status key: %s - STATUS: %x", regTable[i].Name, status);
+        }
+    }
+}
+
 NTSTATUS
 TchRegistryGetControllerSettings(
     IN VOID* ControllerContext,
@@ -605,10 +653,12 @@ TchRegistryGetControllerSettings(
         goto exit;
     }
 
-	status = WdfRegistryOpenKey(
+    status = WdfRegistryCreateKey(
         key,
         &subkeyName,
-        KEY_READ,
+        KEY_ALL_ACCESS,
+        0,
+        NULL,
         WDF_NO_OBJECT_ATTRIBUTES,
         &subkey);
 
@@ -617,7 +667,7 @@ TchRegistryGetControllerSettings(
         Trace(
             TRACE_LEVEL_ERROR,
             TRACE_FLAG_REGISTRY,
-            "Error opening device registry subkey - STATUS:%X",//ST//
+            "Error opening device registry subkey - STATUS:%X",
             status);
 
         goto exit;
@@ -690,16 +740,18 @@ exit:
         // Revert to default configuration values if there was an
         // issue reading configuration data from the registry
         //
-        RtlCopyMemory(
-            &controller->Config,
-            &gDefaultConfiguration,
-            sizeof(RMI4_CONFIGURATION));
+        //RtlCopyMemory(
+         //   &controller->Config,
+         //   &gDefaultConfiguration,
 
         Trace(
             TRACE_LEVEL_WARNING,
             TRACE_FLAG_REGISTRY,
-            "Error reading registry config, using defaults! - STATUS:%X",//ST//
+            "Error reading registry config, writing defaults to registry! - STATUS:%X",
             status);
+
+        RegistryChkOrDefault(key, regTable);
+
 
         status = STATUS_SUCCESS;
     }

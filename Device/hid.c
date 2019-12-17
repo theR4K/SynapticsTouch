@@ -24,6 +24,7 @@
 #include "hid.h"
 #include "debug.h"
 #include "hidCommon.h"
+#include "rmiinternal.h"
 //#include "hid.tmh"
 
 //
@@ -35,6 +36,7 @@ const UCHAR gReportDescriptor[] = {
     BEGIN_COLLECTION, 0x01,                 // COLLECTION (Application)
     REPORT_ID, REPORTID_MTOUCH,             //   REPORT_ID (Touch)
     USAGE, 0x22,                            //   USAGE (Finger)
+
     BEGIN_COLLECTION, 0x02,                 //   COLLECTION (Logical)
     USAGE, 0x42,                            //     USAGE (Tip Switch)
     LOGICAL_MINIMUM, 0x00,                  //     LOGICAL_MINIMUM (0)
@@ -66,6 +68,7 @@ TOUCH_DEVICE_RESOLUTION_Y & 0xff,
     USAGE, 0x31,                            //     USAGE (Y)
     INPUT, 0x02,                            //       INPUT (Data,Var,Abs)
     END_COLLECTION,                         //   END_COLLECTION
+
     BEGIN_COLLECTION, 0x02,                 //   COLLECTION (Logical)
     USAGE_PAGE, 0x0d,                       //     USAGE_PAGE (Digitizers)
     USAGE, 0x42,                            //     USAGE (Tip Switch)
@@ -100,6 +103,7 @@ TOUCH_DEVICE_RESOLUTION_Y & 0xff,
     USAGE, 0x31,                            //     USAGE (Y)
     INPUT, 0x02,                            //       INPUT (Data,Var,Abs)
     END_COLLECTION,                         //   END_COLLECTION
+
     USAGE_PAGE, 0x0d,                       //   USAGE_PAGE (Digitizers)
     USAGE, 0x54,                            //   USAGE (Actual count)
     REPORT_COUNT, 0x01,                     //   REPORT_COUNT (1)
@@ -230,6 +234,45 @@ const HID_DESCRIPTOR gHidDescriptor =
         sizeof(gReportDescriptor)       //wReportLength
     }
 };
+
+ULONG
+generateHidReportDescriptor
+(
+    IN PDEVICE_EXTENSION Context,
+    IN PUCHAR hidReportDescriptor
+)
+{
+    RMI4_CONTROLLER_CONTEXT* touchContext = (RMI4_CONTROLLER_CONTEXT*)Context->TouchContext;
+
+    PUCHAR desc = ExAllocatePoolWithTag(
+        NonPagedPool,
+        sizeof(gdwcbReportDescriptor),
+        TOUCH_POOL_TAG
+    );
+
+    RtlCopyBytes(
+        desc,
+        gReportDescriptor,
+        gdwcbReportDescriptor
+    );
+    
+    for(int i = 0; i < gdwcbReportDescriptor - 2; i++)
+    {
+        if(desc[i] == LOGICAL_MAXIMUM_2)
+        {
+            if((desc[i + 1] == TOUCH_DEVICE_RESOLUTION_X & 0xff) && (desc[i + 2] == (TOUCH_DEVICE_RESOLUTION_X >> 8) & 0xff))
+            {
+                desc[i + 1] =  touchContext->Props.DisplayViewableWidth & 0xff;
+                desc[i + 2] = (touchContext->Props.DisplayViewableWidth >> 8) & 0xff;
+            }
+            if((desc[i + 1] == TOUCH_DEVICE_RESOLUTION_Y & 0xff) && (desc[i + 2] == (TOUCH_DEVICE_RESOLUTION_Y >> 8) & 0xff))
+            {
+                desc[i + 1] = touchContext->Props.DisplayViewableHeight & 0xff;
+                desc[i + 2] = (touchContext->Props.DisplayViewableHeight >> 8) & 0xff;
+            }
+        }
+    }
+}
 
 NTSTATUS
 TchReadReport(
@@ -524,6 +567,15 @@ Return Value:
         goto exit;
     }
 
+    PUCHAR hidReportBuffer;
+    ExAllocatePoolWithTag(
+        NonPagedPool,
+        gdwcbReportDescriptor,
+        TOUCH_POOL_TAG);
+    
+    
+    GetDeviceContext(Device)
+    generateHidReport();
     //
     // Use hardcoded Report descriptor
     //
