@@ -36,12 +36,6 @@
     <ClInclude Include="..\..\Include\spb.h">
       <Filter>Headers</Filter>
     </ClInclude>
-    <ClInclude Include="..\Include\backlight.h">
-      <Filter>Headers</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Include\common.h">
-      <Filter>Headers</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\Include\config.h">
       <Filter>Headers</Filter>
     </ClInclude>
@@ -49,18 +43,6 @@
       <Filter>Headers</Filter>
     </ClInclude>
     <ClInclude Include="..\..\Include\debug.h">
-      <Filter>Headers</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Include\Functions\F01.h">
-      <Filter>Headers</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Include\Functions\F1A.h">
-      <Filter>Headers</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Include\Functions\F11.h">
-      <Filter>Headers</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Include\Functions\F12.h">
       <Filter>Headers</Filter>
     </ClInclude>
     <ClInclude Include="..\..\Include\winphoneabi.h">
@@ -78,6 +60,24 @@
     <ClInclude Include="..\..\Include\resolutions.h">
       <Filter>Headers</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\Include\backlight.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\common.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\Functions\F01.h">
+      <Filter>Headers\functions</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\Functions\F1A.h">
+      <Filter>Headers\functions</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\Functions\F11.h">
+      <Filter>Headers\functions</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\Functions\F12.h">
+      <Filter>Headers\functions</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Headers">
@@ -88,6 +88,9 @@
     </Filter>
     <Filter Include="DriverFiles">
       <UniqueIdentifier>{1f5e09b2-e733-4007-baad-d368e521a06b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Headers\functions">
+      <UniqueIdentifier>{b6354ba3-ab7f-4ed0-a50d-412a9fb1add6}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>

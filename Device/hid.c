@@ -235,43 +235,71 @@ const HID_DESCRIPTOR gHidDescriptor =
     }
 };
 
-ULONG
+NTSTATUS
 generateHidReportDescriptor
 (
     IN PDEVICE_EXTENSION Context,
-    IN PUCHAR hidReportDescriptor
+    IN WDFMEMORY outMemory
 )
 {
+    NTSTATUS status = 0;
     RMI4_CONTROLLER_CONTEXT* touchContext = (RMI4_CONTROLLER_CONTEXT*)Context->TouchContext;
 
-    PUCHAR desc = ExAllocatePoolWithTag(
+    PUCHAR hidReportDescBuffer = (PUCHAR)ExAllocatePoolWithTag(
         NonPagedPool,
-        sizeof(gdwcbReportDescriptor),
+        gdwcbReportDescriptor,
         TOUCH_POOL_TAG
     );
 
+    Trace(TRACE_LEVEL_INFORMATION, TRACE_FLAG_HID, "created hidReportDescBuffer on %x", hidReportDescBuffer);
+
     RtlCopyBytes(
-        desc,
+        hidReportDescBuffer,
         gReportDescriptor,
         gdwcbReportDescriptor
     );
     
-    for(int i = 0; i < gdwcbReportDescriptor - 2; i++)
+    for(unsigned int i = 0; i < gdwcbReportDescriptor - 2; i++)
     {
-        if(desc[i] == LOGICAL_MAXIMUM_2)
+        if(hidReportDescBuffer[i] == LOGICAL_MAXIMUM_2)
         {
-            if((desc[i + 1] == TOUCH_DEVICE_RESOLUTION_X & 0xff) && (desc[i + 2] == (TOUCH_DEVICE_RESOLUTION_X >> 8) & 0xff))
+            if((hidReportDescBuffer[i + 1] == (TOUCH_DEVICE_RESOLUTION_X & 0xff)) && (hidReportDescBuffer[i + 2] == ((TOUCH_DEVICE_RESOLUTION_X >> 8) & 0xff)))
             {
-                desc[i + 1] =  touchContext->Props.DisplayViewableWidth & 0xff;
-                desc[i + 2] = (touchContext->Props.DisplayViewableWidth >> 8) & 0xff;
+                hidReportDescBuffer[i + 1] =  touchContext->Config.TouchSettings.SensorMaxXPos & 0xff;
+                hidReportDescBuffer[i + 2] = (touchContext->Config.TouchSettings.SensorMaxXPos >> 8) & 0xff;
             }
-            if((desc[i + 1] == TOUCH_DEVICE_RESOLUTION_Y & 0xff) && (desc[i + 2] == (TOUCH_DEVICE_RESOLUTION_Y >> 8) & 0xff))
+            if((hidReportDescBuffer[i + 1] == (TOUCH_DEVICE_RESOLUTION_Y & 0xff)) && (hidReportDescBuffer[i + 2] == ((TOUCH_DEVICE_RESOLUTION_Y >> 8) & 0xff)))
             {
-                desc[i + 1] = touchContext->Props.DisplayViewableHeight & 0xff;
-                desc[i + 2] = (touchContext->Props.DisplayViewableHeight >> 8) & 0xff;
+                hidReportDescBuffer[i + 1] = touchContext->Config.TouchSettings.SensorMaxYPos & 0xff;
+                hidReportDescBuffer[i + 2] = (touchContext->Config.TouchSettings.SensorMaxYPos >> 8) & 0xff;
             }
         }
     }
+    Trace(TRACE_LEVEL_INFORMATION, TRACE_FLAG_HID, "set X %u and Y %u to hidReportDescriptor", touchContext->Config.TouchSettings.SensorMaxXPos, touchContext->Config.TouchSettings.SensorMaxYPos);
+
+    //
+    // Use hardcoded Report descriptor
+    //
+        status = WdfMemoryCopyFromBuffer(
+            outMemory,
+            0,
+            (PVOID)hidReportDescBuffer,
+            //gReportDescriptor,
+            gdwcbReportDescriptor);
+    
+        if(!NT_SUCCESS(status))
+        {
+            Trace(
+                TRACE_LEVEL_ERROR,
+                TRACE_FLAG_HID,
+                "Error copying HID report descriptor to request memory - STATUS:%X",
+                status);
+            goto exit;
+        }
+
+    exit:
+        ExFreePoolWithTag((PVOID)hidReportDescBuffer, TOUCH_POOL_TAG);
+        return status;
 }
 
 NTSTATUS
@@ -543,9 +571,6 @@ Return Value:
 {
     WDFMEMORY memory;
     NTSTATUS status;
-
-    UNREFERENCED_PARAMETER(Device);
-
     //
     // This IOCTL is METHOD_NEITHER so WdfRequestRetrieveOutputMemory
     // will correctly retrieve buffer from Irp->UserBuffer.
@@ -566,35 +591,9 @@ Return Value:
             status);
         goto exit;
     }
-
-    PUCHAR hidReportBuffer;
-    ExAllocatePoolWithTag(
-        NonPagedPool,
-        gdwcbReportDescriptor,
-        TOUCH_POOL_TAG);
     
-    
-    GetDeviceContext(Device)
-    generateHidReport();
-    //
-    // Use hardcoded Report descriptor
-    //
-    status = WdfMemoryCopyFromBuffer(
-        memory,
-        0,
-        (PUCHAR)gReportDescriptor,
-        gdwcbReportDescriptor);
-
-    if(!NT_SUCCESS(status))
-    {
-        Trace(
-            TRACE_LEVEL_ERROR,
-            TRACE_FLAG_HID,
-            "Error copying HID report descriptor to request memory - STATUS:%X",
-            status);
+    if(!NT_SUCCESS(generateHidReportDescriptor(GetDeviceContext(Device), memory)))
         goto exit;
-    }
-
     //
     // Report how many bytes were copied
     //
