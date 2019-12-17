@@ -491,7 +491,8 @@ configureF11(
         "Max Fingers Count. Value is %u", ControllerContext->MaxFingers);
     //end query
 
-
+    ControllerContext->Config.TouchSettings.SensorMaxXPos = ControllerContext->Props.TouchPhysicalWidth;
+    ControllerContext->Config.TouchSettings.SensorMaxYPos = ControllerContext->Props.TouchPhysicalHeight;
     RmiConvertF11ToPhysical(
         &ControllerContext->Config.TouchSettings,
         &controlF11);
