@@ -33,10 +33,10 @@
 #define BIT_WORD(nr)		((nr) / BITS_PER_LONG)
 #define BITS_TO_TYPE(nr, t)	(((nr)+(t)-1)/(t))
 
-void bitmap_set(unsigned long *map, unsigned int start, int len);
-int bitmap_weight(const unsigned long *bitmap, unsigned int bits);
-unsigned long find_first_bit(const unsigned long *addr, unsigned long size);
-unsigned long find_next_bit(const unsigned long *addr, unsigned long size, unsigned long offset);
+void bitmap_set(unsigned long* map, unsigned int start, int len);
+int bitmap_weight(const unsigned long* bitmap, unsigned int bits);
+unsigned long find_first_bit(const unsigned long* addr, unsigned long size);
+unsigned long find_next_bit(const unsigned long* addr, unsigned long size, unsigned long offset);
 
 #endif
 #pragma once

@@ -1,20 +1,20 @@
 /*++
-    Copyright (c) Microsoft Corporation. All Rights Reserved. 
-    Sample code. Dealpoint ID #843729.
+	Copyright (c) Microsoft Corporation. All Rights Reserved.
+	Sample code. Dealpoint ID #843729.
 
-    Module Name:
+	Module Name:
 
-        backlight.h
+		backlight.h
 
-    Abstract:
+	Abstract:
 
-        Contains capacitive backlight control defines and types
+		Contains capacitive backlight control defines and types
 
-    Environment:
+	Environment:
 
-        Kernel mode
+		Kernel mode
 
-    Revision History:
+	Revision History:
 
 
 --*/
@@ -44,20 +44,20 @@
 
 typedef struct _BKL_LUX_TABLE_ENTRY
 {
-    ULONG Min;
-    ULONG Max;
-    ULONG Intensity;
+	ULONG Min;
+	ULONG Max;
+	ULONG Intensity;
 } BKL_LUX_TABLE_ENTRY;
 
 typedef struct _SENSOR_NOTIFICATION
 {
-    ULONG Size;
-    ULONG Flags;
-    ULONG IntervalUs;
-    ULONG ThreshMinSize;
-    ULONG ThreshMaxSize;
-    ULONG ThreshInfoSize;
-} SENSOR_NOTIFICATION, *PSENSOR_NOTIFICATION;
+	ULONG Size;
+	ULONG Flags;
+	ULONG IntervalUs;
+	ULONG ThreshMinSize;
+	ULONG ThreshMaxSize;
+	ULONG ThreshInfoSize;
+} SENSOR_NOTIFICATION, * PSENSOR_NOTIFICATION;
 
 #define IOCTL_SENSOR_CLX_NOTIFICATION_CONFIGURE   \
     CTL_CODE(FILE_DEVICE_UNKNOWN, 5, METHOD_BUFFERED, FILE_ANY_ACCESS)
@@ -68,68 +68,68 @@ typedef struct _SENSOR_NOTIFICATION
 
 typedef struct _BKL_CONTEXT
 {
-    WDFDEVICE FxDevice;
+	WDFDEVICE FxDevice;
 
-    WDFIOTARGET HwnIoTarget;
-    PVOID HwnPnpNotificationEntry;
-    BOOLEAN HwnReady;
-    HWN_HEADER* HwnConfiguration;
-    size_t HwnConfigurationSize;
-    ULONG HwnNumLeds;
-    PULONG HwnLedIndexList;
+	WDFIOTARGET HwnIoTarget;
+	PVOID HwnPnpNotificationEntry;
+	BOOLEAN HwnReady;
+	HWN_HEADER* HwnConfiguration;
+	size_t HwnConfigurationSize;
+	ULONG HwnNumLeds;
+	PULONG HwnLedIndexList;
 
-    WDFIOTARGET AlsIoTarget;
-    PVOID AlsPnpNotificationEntry;
-    BOOLEAN AlsReady;
-    SENSOR_NOTIFICATION AlsConfiguration;
-    ALS_DATA AlsData;
-    NTSTATUS AlsStatus; 
+	WDFIOTARGET AlsIoTarget;
+	PVOID AlsPnpNotificationEntry;
+	BOOLEAN AlsReady;
+	SENSOR_NOTIFICATION AlsConfiguration;
+	ALS_DATA AlsData;
+	NTSTATUS AlsStatus;
 
-    WDFWAITLOCK BacklightLock;
-    WDFWORKITEM TchBklPollAlsWorkItem;
-    BOOLEAN TchBklPollAls;
-    ULONG CurrentBklIntensity;
+	WDFWAITLOCK BacklightLock;
+	WDFWORKITEM TchBklPollAlsWorkItem;
+	BOOLEAN TchBklPollAls;
+	ULONG CurrentBklIntensity;
 
-    ULONG BklNumLevels;
-    BKL_LUX_TABLE_ENTRY* BklLuxTable;
+	ULONG BklNumLevels;
+	BKL_LUX_TABLE_ENTRY* BklLuxTable;
 
-    ULONG Timeout;
-    ULONG LastInputTime;
+	ULONG Timeout;
+	ULONG LastInputTime;
 
-    PVOID MonitorChangeNotificationHandle;
+	PVOID MonitorChangeNotificationHandle;
 } BKL_CONTEXT;
 
 typedef struct _WORKITEM_CONTEXT
 {
-    BKL_CONTEXT* BklContext;
+	BKL_CONTEXT* BklContext;
 } WORKITEM_CONTEXT;
 
 WDF_DECLARE_CONTEXT_TYPE_WITH_NAME(WORKITEM_CONTEXT, GetTouchBacklightContext);
 
 VOID
 TchBklDeinitialize(
-    IN BKL_CONTEXT* BklContext
-    );
+	IN BKL_CONTEXT* BklContext
+);
 
 NTSTATUS
 TchBklEnable(
-    IN BKL_CONTEXT* BklContext,
-    IN BOOLEAN Enable
-    );
+	IN BKL_CONTEXT* BklContext,
+	IN BOOLEAN Enable
+);
 
 BKL_CONTEXT*
 TchBklInitialize(
-    IN WDFDEVICE FxDevice
-    );
+	IN WDFDEVICE FxDevice
+);
 
 VOID
 TchBklNotifyTouchActivity(
-    IN BKL_CONTEXT* BklContext,
-    IN DWORD Time
-    );
+	IN BKL_CONTEXT* BklContext,
+	IN DWORD Time
+);
 
 EVT_WDF_WORKITEM TchBklGetLightSensorValue;
-    
+
 DRIVER_NOTIFICATION_CALLBACK_ROUTINE TchBklOnAlsDeviceReady;
 
 DRIVER_NOTIFICATION_CALLBACK_ROUTINE TchBklOnHwnDeviceReady;
