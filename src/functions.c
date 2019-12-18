@@ -210,8 +210,7 @@ RmiReadRegisterDescriptor(
 			for (b = 0; b < 7; b++)
 			{
 				if (struct_buf[offset] & (0x1 << b))
-					item->NumSubPackets++;
-				bitmap_set(item->SubPacketMap, map_offset, 1);
+				    bitmap_set(item->SubPacketMap, map_offset, 1);
 				++map_offset;
 			}
 		} while (struct_buf[offset++] & 0x80);
