@@ -26,6 +26,7 @@ RmiServiceCapacitiveButtonInterrupt(
 	IN RMI4_CONTROLLER_CONTEXT* ControllerContext,
 	IN SPB_CONTEXT* SpbContext,
 	IN PHID_INPUT_REPORT HidReport,
+	IN BOOLEAN ReversedKeys,
 	OUT BOOLEAN* PendingTouches
 )
 /*++
@@ -52,7 +53,6 @@ Return Value:
 	PHID_KEY_REPORT hidKeys;
 	int index;
 	NTSTATUS status;
-	//USHORT timeNow = 0;
 
 	//
 	// If the controller doesn't support buttons, ignore this interrupt
@@ -135,11 +135,11 @@ Return Value:
 	prevDataF1A.Raw = ControllerContext->ButtonsCache.prevPhysicalState;
 	ControllerContext->ButtonsCache.prevPhysicalState = dataF1A.Raw;
 
-
 	if (dataF1A.Button1 != prevDataF1A.Button1)
 	{
 		HidReport->ReportID = REPORTID_CAPKEY_KEYBOARD;
 		hidKeys->bKeys |= (dataF1A.Button1) ? (1 << 0) : 0;
+
 		if (dataF1A.Button0 != prevDataF1A.Button0 || dataF1A.Button2 != prevDataF1A.Button2)
 		{
 			ControllerContext->ButtonsCache.PendingState |= (dataF1A.Button0) ? (1 << 0) : 0;
@@ -147,14 +147,25 @@ Return Value:
 			ControllerContext->ButtonsCache.PendingState |= (1 << 7); //indicate waiting buttons
 			*PendingTouches = TRUE;
 		}
+
 		goto exit;
 	}
+
 	if (dataF1A.Button0 != prevDataF1A.Button0 || dataF1A.Button2 != prevDataF1A.Button2)
 	{
 		HidReport->ReportID = REPORTID_CAPKEY_CONSUMER;
-		hidKeys->bKeys |= (dataF1A.Button0) ? (1 << 0) : 0;
-		hidKeys->bKeys |= (dataF1A.Button2) ? (1 << 1) : 0;
+		if (ReversedKeys)
+		{
+			hidKeys->bKeys |= (dataF1A.Button0) ? (1 << 0) : 0;
+			hidKeys->bKeys |= (dataF1A.Button2) ? (1 << 1) : 0;
+		}
+		else
+		{
+			hidKeys->bKeys |= (dataF1A.Button2) ? (1 << 0) : 0;
+			hidKeys->bKeys |= (dataF1A.Button0) ? (1 << 1) : 0;
+		}
 	}
+
 	//
 	// On return of success, this request will be completed up the stack
 	//
@@ -226,17 +237,17 @@ TchHandleButtonArea(
 		ControllerY = Props->TouchPhysicalHeight - ControllerY - 1u;
 	}
 
-	if (ControllerX > ButtonAreaXMin&& ControllerX < ButtonAreaXMax && ControllerY > ButtonAreaYMin&& ControllerY < ButtonAreaYMax)
+	if (ControllerX > ButtonAreaXMin && ControllerX < ButtonAreaXMax && ControllerY > ButtonAreaYMin && ControllerY < ButtonAreaYMax)
 	{
-		if (ControllerX > BackAreaXMin&& ControllerX < BackAreaXMax && ControllerY > BackAreaYMin&& ControllerY < BackAreaYMax)
+		if (ControllerX > BackAreaXMin && ControllerX < BackAreaXMax && ControllerY > BackAreaYMin && ControllerY < BackAreaYMax)
 		{
 			return BUTTON_BACK;
 		}
-		if (ControllerX > StartAreaXMin&& ControllerX < StartAreaXMax && ControllerY > StartAreaYMin&& ControllerY < StartAreaYMax)
+		if (ControllerX > StartAreaXMin && ControllerX < StartAreaXMax && ControllerY > StartAreaYMin && ControllerY < StartAreaYMax)
 		{
 			return BUTTON_START;
 		}
-		if (ControllerX > SearchAreaXMin&& ControllerX < SearchAreaXMax && ControllerY > SearchAreaYMin&& ControllerY < SearchAreaYMax)
+		if (ControllerX > SearchAreaXMin && ControllerX < SearchAreaXMax && ControllerY > SearchAreaYMin && ControllerY < SearchAreaYMax)
 		{
 			return BUTTON_SEARCH;
 		}

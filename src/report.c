@@ -410,14 +410,15 @@ Return Value:
 	// Driver only services 0D cap button and 2D touch messages currently
 	//
 	if (controller->InterruptStatus &
-		~(RMI4_INTERRUPT_BIT_0D_CAP_BUTTON | RMI4_INTERRUPT_BIT_2D_TOUCH))
+		~(RMI4_INTERRUPT_BIT_0D_CAP_BUTTON | RMI4_INTERRUPT_BIT_0D_CAP_BUTTON_2 | RMI4_INTERRUPT_BIT_2D_TOUCH))
 	{
 		Trace(
 			TRACE_LEVEL_WARNING,
 			TRACE_FLAG_INTERRUPT,
 			"Ignoring following interrupt flags - STATUS:%X",
 			controller->InterruptStatus &
-			~(RMI4_INTERRUPT_BIT_0D_CAP_BUTTON |
+			~(RMI4_INTERRUPT_BIT_0D_CAP_BUTTON | 
+				RMI4_INTERRUPT_BIT_0D_CAP_BUTTON_2 |
 				RMI4_INTERRUPT_BIT_2D_TOUCH));
 
 		//
@@ -425,6 +426,7 @@ Return Value:
 		//
 		controller->InterruptStatus &=
 			(RMI4_INTERRUPT_BIT_0D_CAP_BUTTON |
+				RMI4_INTERRUPT_BIT_0D_CAP_BUTTON_2 |
 				RMI4_INTERRUPT_BIT_2D_TOUCH);
 	}
 
@@ -437,14 +439,22 @@ Return Value:
 	//
 	// Service a capacitive button event if indicated by hardware
 	//
-	if (controller->InterruptStatus & RMI4_INTERRUPT_BIT_0D_CAP_BUTTON)
+	if (controller->InterruptStatus & RMI4_INTERRUPT_BIT_0D_CAP_BUTTON || 
+		controller->InterruptStatus & RMI4_INTERRUPT_BIT_0D_CAP_BUTTON_REVERSED)
 	{
 		BOOLEAN pendingTouches = FALSE;
+		BOOLEAN reversedKeys = FALSE;
+
+		if (controller->InterruptStatus & RMI4_INTERRUPT_BIT_0D_CAP_BUTTON_REVERSED)
+		{
+			reversedKeys = TRUE;
+		}
 
 		status = RmiServiceCapacitiveButtonInterrupt(
 			ControllerContext,
 			SpbContext,
 			HidReport,
+			reversedKeys
 			&pendingTouches);
 
 		//
@@ -453,6 +463,7 @@ Return Value:
 		if (pendingTouches == FALSE)
 		{
 			controller->InterruptStatus &= ~RMI4_INTERRUPT_BIT_0D_CAP_BUTTON;
+			controller->InterruptStatus &= ~RMI4_INTERRUPT_BIT_0D_CAP_BUTTON_2;
 		}
 
 		//
