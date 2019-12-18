@@ -27,6 +27,7 @@
 #include <reshub.h>
 #include <kbdmou.h>
 #include "spb.h"
+#include "hid.h"
 
 #define TOUCH_POOL_TAG                  (ULONG)'cuoT'
 
@@ -85,7 +86,7 @@ typedef struct _HID_TOUCH_REPORT
 	{
 		struct
 		{
-			HID_CONTACT_POINT Contacts[2];
+			HID_CONTACT_POINT Contacts[SYNAPTICS_TOUCH_DIGITIZER_FINGER_REPORT_COUNT];
 			UCHAR  ActualCount;
 			USHORT ScanTime;
 		} InputReport;
