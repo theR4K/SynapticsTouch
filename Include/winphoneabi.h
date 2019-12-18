@@ -53,6 +53,6 @@ typedef struct _ALS_DATA
 	// Readings in milli Lux
 	//
 	ULONG Sample;
-} ALS_DATA, *PALS_DATA;
+} ALS_DATA, * PALS_DATA;
 
 //end wpambient.h

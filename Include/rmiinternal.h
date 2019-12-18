@@ -1,21 +1,21 @@
 /*++
-    Copyright (c) Microsoft Corporation. All Rights Reserved. 
-    Sample code. Dealpoint ID #843729.
+	Copyright (c) Microsoft Corporation. All Rights Reserved.
+	Sample code. Dealpoint ID #843729.
 
-    Module Name:
+	Module Name:
 
-        rmiinternal.h
+		rmiinternal.h
 
-    Abstract:
+	Abstract:
 
-        Contains common types and defintions used internally
-        by the multi touch screen driver.
+		Contains common types and defintions used internally
+		by the multi touch screen driver.
 
-    Environment:
+	Environment:
 
-        Kernel mode
+		Kernel mode
 
-    Revision History:
+	Revision History:
 
 --*/
 
@@ -27,10 +27,10 @@
 #include "resolutions.h"
 #include "backlight.h"
 
-#include "functions/F01.h"
-#include "functions/F11.h"
-#include "functions/F12.h"
-#include "functions/F1A.h"
+#include "F01.h"
+#include "F11.h"
+#include "F12.h"
+#include "F1A.h"
 
 //
 // Defines from Synaptics RMI4 Data Sheet, please refer to
@@ -41,10 +41,6 @@
 #define RMI4_FIRST_FUNCTION_ADDRESS       0xE9
 #define RMI4_PAGE_SELECT_ADDRESS          0xFF
 
-#define RMI4_F01_RMI_DEVICE_CONTROL       0x01
-#define RMI4_F11_2D_TOUCHPAD_SENSOR       0x11
-#define RMI4_F12_2D_TOUCHPAD_SENSOR		  0x12
-#define RMI4_F1A_0D_CAP_BUTTON_SENSOR     0x1A
 #define RMI4_F34_FLASH_MEMORY_MANAGEMENT  0x34
 #define RMI4_F54_TEST_REPORTING           0x54
 
@@ -54,22 +50,22 @@
 
 typedef struct _RMI4_FUNCTION_DESCRIPTOR
 {
-    BYTE QueryBase;
-    BYTE CommandBase;
-    BYTE ControlBase;
-    BYTE DataBase;
-    union 
-    {
-        BYTE All;
-        struct
-        {
-            BYTE IrqCount  : 3;
-            BYTE Reserved0 : 2;
-            BYTE FuncVer   : 2;
-            BYTE Reserved1 : 1;
-        };
-    } VersionIrq;
-    BYTE Number;
+	BYTE QueryBase;
+	BYTE CommandBase;
+	BYTE ControlBase;
+	BYTE DataBase;
+	union
+	{
+		BYTE All;
+		struct
+		{
+			BYTE IrqCount : 3;
+			BYTE Reserved0 : 2;
+			BYTE FuncVer : 2;
+			BYTE Reserved1 : 1;
+		};
+	} VersionIrq;
+	BYTE Number;
 } RMI4_FUNCTION_DESCRIPTOR;
 
 #define RMI4_MILLISECONDS_TO_TENTH_MILLISECONDS(n) n/10
@@ -78,183 +74,142 @@ typedef struct _RMI4_FUNCTION_DESCRIPTOR
 #define RMI4_INTERRUPT_BIT_2D_TOUCH               0x04
 #define RMI4_INTERRUPT_BIT_0D_CAP_BUTTON          0x20
 
+#define TOUCH_POOL_TAG_F12              (ULONG)'21oT'
+
 //
 // Driver structures
 //
 
 typedef struct _RMI4_CONFIGURATION
 {
-    RMI4_F01_CTRL_REGISTERS_LOGICAL DeviceSettings;
-    RMI4_F11_CTRL_REGISTERS_LOGICAL TouchSettings;
-    UINT32 PepRemovesVoltageInD3;
+	RMI4_F01_CTRL_REGISTERS_LOGICAL DeviceSettings;
+	RMI4_F11_CTRL_REGISTERS_LOGICAL TouchSettings;
+	UINT32 PepRemovesVoltageInD3;
 } RMI4_CONFIGURATION;
 
 typedef struct _RMI4_FINGER_INFO
 {
-    int x;
-    int y;
-    UCHAR fingerStatus;
+	int x;
+	int y;
+	UCHAR fingerStatus;
 } RMI4_FINGER_INFO;
 
 typedef struct _RMI4_FINGER_CACHE
 {
-    RMI4_FINGER_INFO FingerSlot[RMI4_MAX_TOUCHES];
-    UINT32 FingerSlotValid;
-    UINT32 FingerSlotDirty;
-    int FingerDownOrder[RMI4_MAX_TOUCHES];
-    int FingerDownCount;
-    ULONG64 ScanTime;
+	RMI4_FINGER_INFO FingerSlot[RMI4_MAX_TOUCHES];
+	UINT32 FingerSlotValid;
+	UINT32 FingerSlotDirty;
+	int FingerDownOrder[RMI4_MAX_TOUCHES];
+	int FingerDownCount;
+	ULONG64 ScanTime;
 } RMI4_FINGER_CACHE;
 
 typedef struct _RMI4_CONTROLLER_CONTEXT
 {
-    WDFDEVICE FxDevice;    
-    WDFWAITLOCK ControllerLock;
+	WDFDEVICE FxDevice;
+	WDFWAITLOCK ControllerLock;
 
-    //
-    // Controller state
-    //
-    int FunctionCount;
-    RMI4_FUNCTION_DESCRIPTOR Descriptors[RMI4_MAX_FUNCTIONS];
-    int FunctionOnPage[RMI4_MAX_FUNCTIONS];
-    int CurrentPage;
+	//
+	// Controller state
+	//
+	int FunctionCount;
+	RMI4_FUNCTION_DESCRIPTOR Descriptors[RMI4_MAX_FUNCTIONS];
+	int FunctionOnPage[RMI4_MAX_FUNCTIONS];
+	int CurrentPage;
 
-    ULONG InterruptStatus;
-    BOOLEAN HasButtons;
-    BOOLEAN ResetOccurred;
-    BOOLEAN InvalidConfiguration;
-    BOOLEAN DeviceFailure;
-    BOOLEAN UnknownStatus;
-    BYTE UnknownStatusMessage;
-    RMI4_F01_QUERY_REGISTERS F01QueryRegisters;
+	ULONG InterruptStatus;
 
-    //
-    // Power state
-    //
-    DEVICE_POWER_STATE DevicePowerState;
+	BOOLEAN HasButtons;
+	BOOLEAN ResetOccurred;
+	BOOLEAN InvalidConfiguration;
+	BOOLEAN DeviceFailure;
+	BOOLEAN UnknownStatus;
+	BOOLEAN IsF12Digitizer;
 
-    //
-    // Register configuration programmed to chip
-    //
-    TOUCH_SCREEN_PROPERTIES Props;
-    RMI4_CONFIGURATION Config;
+	BYTE UnknownStatusMessage;
 
-    //
-    // Current touch state
-    //
-    int TouchesReported;
-    int TouchesTotal;
-    RMI4_FINGER_CACHE Cache;
+	RMI4_F01_QUERY_REGISTERS F01QueryRegisters;
 
-    //
-    // Cap key backlight related
-    //
-    BKL_CONTEXT* BklContext;
+	//
+	// Power state
+	//
+	DEVICE_POWER_STATE DevicePowerState;
 
-    //rmi4 f12
-    BOOLEAN F12Flag;
+	//
+	// Register configuration programmed to chip
+	//
+	TOUCH_SCREEN_PROPERTIES Props;
+	RMI4_CONFIGURATION Config;
 
-    size_t PacketSize;
+	//
+	// Current touch state
+	//
+	int TouchesReported;
+	int TouchesTotal;
+	RMI4_FINGER_CACHE FingerCache;
 
-    USHORT Data1Offset;
-    BYTE MaxFingers;
+	//
+	// Backlight keys
+	//
+	BKL_CONTEXT* BklContext;
 
-    //cap keys f1a
-    RMI4_F1A_CACHE capButtonsCache;
+	size_t PacketSize;
+
+	USHORT Data1Offset;
+	BYTE MaxFingers;
+
+	//
+	// Current button state
+	//
+	RMI4_F1A_CACHE ButtonsCache;
 
 } RMI4_CONTROLLER_CONTEXT;
 
-
-//f12 start 
-
-#define TOUCH_POOL_TAG_F12              (ULONG)'21oT'
-
-
 NTSTATUS
 RmiCheckInterrupts(
-    IN RMI4_CONTROLLER_CONTEXT *ControllerContext,
-    IN SPB_CONTEXT *SpbContext,
-    IN ULONG* InterruptStatus
-    );
+	IN RMI4_CONTROLLER_CONTEXT* ControllerContext,
+	IN SPB_CONTEXT* SpbContext,
+	IN ULONG* InterruptStatus
+);
 
 int
 RmiGetFunctionIndex(
-    IN RMI4_FUNCTION_DESCRIPTOR* FunctionDescriptors,
-    IN int FunctionCount,
-    IN int FunctionDesired
-    );
+	IN RMI4_FUNCTION_DESCRIPTOR* FunctionDescriptors,
+	IN int FunctionCount,
+	IN int FunctionDesired
+);
 
 NTSTATUS
 RmiChangePage(
-    IN RMI4_CONTROLLER_CONTEXT* ControllerContext,
-    IN SPB_CONTEXT* SpbContext,
-    IN int DesiredPage
-    );
-
-
-
-
-NTSTATUS
-configureF01(
-	IN RMI4_CONTROLLER_CONTEXT *ControllerContext,
-	IN SPB_CONTEXT *SpbContext
-);
-
-VOID
-RmiConvertF01ToPhysical(
-	IN RMI4_F01_CTRL_REGISTERS_LOGICAL* Logical,
-	IN RMI4_F01_CTRL_REGISTERS* Physical
+	IN RMI4_CONTROLLER_CONTEXT* ControllerContext,
+	IN SPB_CONTEXT* SpbContext,
+	IN int DesiredPage
 );
 
 NTSTATUS
-GetTouchesFromF11(
-	IN RMI4_CONTROLLER_CONTEXT *ControllerContext,
-	IN SPB_CONTEXT *SpbContext
+RmiGetTouchesFromController(
+	IN RMI4_CONTROLLER_CONTEXT* ControllerContext,
+	IN SPB_CONTEXT* SpbContext
 );
 
-VOID
-UpdateLocalFingerCacheF11(
-	IN ULONG FingerStatusRegister,
-	IN RMI4_F11_DATA_POSITION *FingerPosRegisters,
-	IN RMI4_CONTROLLER_CONTEXT *ControllerContext
-);
-
-NTSTATUS
-configureF11(
-	IN RMI4_CONTROLLER_CONTEXT *ControllerContext,
-	IN SPB_CONTEXT *SpbContext
-);
-
-VOID
-RmiConvertF11ToPhysical(
-	IN RMI4_F11_CTRL_REGISTERS_LOGICAL* Logical,
-	IN RMI4_F11_CTRL_REGISTERS* Physical
+UINT8 RmiGetRegisterIndex(
+	PRMI_REGISTER_DESCRIPTOR Rdesc,
+	USHORT reg
 );
 
 NTSTATUS
-GetTouchesFromF12(
-	IN RMI4_CONTROLLER_CONTEXT *ControllerContext,
-	IN SPB_CONTEXT *SpbContext
+RmiReadRegisterDescriptor(
+	IN SPB_CONTEXT* Context,
+	IN UCHAR Address,
+	IN PRMI_REGISTER_DESCRIPTOR Rdesc
 );
 
-VOID
-UpdateLocalFingerCacheF12(
-	IN ULONG FingerStatusRegister,
-	IN RMI4_F12_DATA_POSITION *FingerPosRegisters,
-	IN RMI4_CONTROLLER_CONTEXT *ControllerContext
+size_t
+RmiRegisterDescriptorCalcSize(
+	IN PRMI_REGISTER_DESCRIPTOR Rdesc
 );
 
-NTSTATUS
-configureF12(
-	IN RMI4_CONTROLLER_CONTEXT *ControllerContext,
-	IN SPB_CONTEXT *SpbContext
+const PRMI_REGISTER_DESC_ITEM RmiGetRegisterDescItem(
+	PRMI_REGISTER_DESCRIPTOR Rdesc,
+	USHORT reg
 );
-
-NTSTATUS
-configureF1A(
-	IN RMI4_CONTROLLER_CONTEXT *ControllerContext,
-	IN SPB_CONTEXT *SpbContext
-);
-
-int
-Ceil( IN int value, IN int divider);

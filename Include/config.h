@@ -1,8 +1,6 @@
 
 #define TOUCH_SCREEN_PROPERTIES_REG_KEY L"\\Registry\\Machine\\System\\TOUCH\\SCREENPROPERTIES"
-
-#define TOUCH_DEVICE_RESOLUTION_X       816
-#define TOUCH_DEVICE_RESOLUTION_Y       1394
+#define TOUCH_SETTINGS_REG_KEY          L"\\Registry\\Machine\\System\\TOUCH\\SETTINGS"
 
 //
 // Global Data Declarations

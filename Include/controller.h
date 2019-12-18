@@ -1,20 +1,20 @@
 /*++
-    Copyright (c) Microsoft Corporation. All Rights Reserved. 
-    Sample code. Dealpoint ID #843729.
+	Copyright (c) Microsoft Corporation. All Rights Reserved.
+	Sample code. Dealpoint ID #843729.
 
-    Module Name: 
+	Module Name:
 
-        controller.h
+		controller.h
 
-    Abstract:
+	Abstract:
 
-        This module contains touch driver public definitions.
+		This module contains touch driver public definitions.
 
-    Environment:
+	Environment:
 
-        Kernel mode
+		Kernel mode
 
-    Revision History:
+	Revision History:
 
 --*/
 
@@ -73,122 +73,121 @@
 
 typedef struct _HID_CONTACT_POINT
 {
-    UCHAR  bStatus;
-    UCHAR  ContactId;
-    USHORT wXData;
-    USHORT wYData;
+	UCHAR  bStatus;
+	UCHAR  ContactId;
+	USHORT wXData;
+	USHORT wYData;
 } HID_CONTACT_POINT;
 
 typedef struct _HID_TOUCH_REPORT
 {
-    union
-    {
-        struct
-        {
-            HID_CONTACT_POINT Contacts[2];
-            UCHAR  ActualCount;
-            USHORT ScanTime;
-        } InputReport;
-        UCHAR RawInput[15];
-    };
-} HID_TOUCH_REPORT, *PHID_TOUCH_REPORT;
+	union
+	{
+		struct
+		{
+			HID_CONTACT_POINT Contacts[2];
+			UCHAR  ActualCount;
+			USHORT ScanTime;
+		} InputReport;
+		UCHAR RawInput[15];
+	};
+} HID_TOUCH_REPORT, * PHID_TOUCH_REPORT;
 
 typedef struct _HID_MOUSE_REPORT {
-    union
-    {
-        struct
-        {
-            UCHAR  bButtons;
-            USHORT wXData;
-            USHORT wYData;
-            USHORT wReserved;
-        }InputReport;
-        UCHAR RawInput[7];
-    };
-} HID_MOUSE_REPORT, *PHID_MOUSE_REPORT;
+	union
+	{
+		struct
+		{
+			UCHAR  bButtons;
+			USHORT wXData;
+			USHORT wYData;
+			USHORT wReserved;
+		}InputReport;
+		UCHAR RawInput[7];
+	};
+} HID_MOUSE_REPORT, * PHID_MOUSE_REPORT;
 
 typedef struct _HID_KEY_REPORT {
-    UCHAR  bKeys;
-} HID_KEY_REPORT, *PHID_KEY_REPORT;
+	UCHAR  bKeys;
+} HID_KEY_REPORT, * PHID_KEY_REPORT;
 
 
 typedef struct _HID_FEATURE_REPORT
 {
-    UCHAR ReportID;
-    UCHAR InputMode;
-    UCHAR DeviceIndex;
-} HID_FEATURE_REPORT, *PHID_FEATURE_REPORT;
+	UCHAR ReportID;
+	UCHAR InputMode;
+	UCHAR DeviceIndex;
+} HID_FEATURE_REPORT, * PHID_FEATURE_REPORT;
 
 typedef struct _HID_MAX_COUNT_REPORT
 {
-    UCHAR ReportID;
-    UCHAR MaxCount;
-}HID_MAX_COUNT_REPORT, *PHID_MAX_COUNT_REPORT;
+	UCHAR ReportID;
+	UCHAR MaxCount;
+}HID_MAX_COUNT_REPORT, * PHID_MAX_COUNT_REPORT;
 
 typedef struct _HID_INPUT_REPORT
 {
-    UCHAR ReportID;
-    union
-    {
-        HID_TOUCH_REPORT TouchReport;
-        HID_MOUSE_REPORT MouseReport;
-        HID_KEY_REPORT   KeyReport;
-    };
+	UCHAR ReportID;
+	union
+	{
+		HID_TOUCH_REPORT TouchReport;
+		HID_MOUSE_REPORT MouseReport;
+		HID_KEY_REPORT   KeyReport;
+	};
 #ifdef _TIMESTAMP_
-    LARGE_INTEGER TimeStamp;
+	LARGE_INTEGER TimeStamp;
 #endif
-} HID_INPUT_REPORT, *PHID_INPUT_REPORT;
+} HID_INPUT_REPORT, * PHID_INPUT_REPORT;
 
 #include <poppack.h>
 #pragma warning(pop)
 
-NTSTATUS 
+NTSTATUS
 TchAllocateContext(
-    OUT VOID **ControllerContext,
-    IN WDFDEVICE FxDevice
-    );
+	OUT VOID** ControllerContext,
+	IN WDFDEVICE FxDevice
+);
 
-NTSTATUS 
+NTSTATUS
 TchFreeContext(
-    IN VOID *ControllerContext
-    );
+	IN VOID* ControllerContext
+);
 
-NTSTATUS 
+NTSTATUS
 TchStartDevice(
-    IN VOID *ControllerContext,
-    IN SPB_CONTEXT *SpbContext
-    );
+	IN VOID* ControllerContext,
+	IN SPB_CONTEXT* SpbContext
+);
 
-NTSTATUS 
+NTSTATUS
 TchStopDevice(
-    IN VOID *ControllerContext,
-    IN SPB_CONTEXT *SpbContext
-    );
+	IN VOID* ControllerContext,
+	IN SPB_CONTEXT* SpbContext
+);
 
-NTSTATUS 
+NTSTATUS
 TchStandbyDevice(
-    IN VOID *ControllerContext,
-    IN SPB_CONTEXT *SpbContext
-    );
+	IN VOID* ControllerContext,
+	IN SPB_CONTEXT* SpbContext
+);
 
-NTSTATUS 
+NTSTATUS
 TchWakeDevice(
-    IN VOID *ControllerContext,
-    IN SPB_CONTEXT *SpbContext
-    );
+	IN VOID* ControllerContext,
+	IN SPB_CONTEXT* SpbContext
+);
 
 NTSTATUS
 TchRegistryGetControllerSettings(
-    IN VOID *ControllerContext,
-    IN WDFDEVICE FxDevice
-    );
-   
+	IN VOID* ControllerContext
+);
+
 NTSTATUS
 TchServiceInterrupts(
-    IN VOID *ControllerContext,
-    IN SPB_CONTEXT *SpbContext,
-    IN PHID_INPUT_REPORT HidReport,
-    IN UCHAR InputMode,
-    OUT BOOLEAN *ServicingComplete
-    );
+	IN VOID* ControllerContext,
+	IN SPB_CONTEXT* SpbContext,
+	IN PHID_INPUT_REPORT HidReport,
+	IN UCHAR InputMode,
+	OUT BOOLEAN* ServicingComplete
+);
 
