@@ -27,8 +27,7 @@ RmiSetReportingMode(
 	IN RMI4_CONTROLLER_CONTEXT* ControllerContext,
 	IN SPB_CONTEXT* SpbContext,
 	IN UCHAR NewMode,
-	OUT UCHAR* OldMode,
-	IN PRMI_REGISTER_DESCRIPTOR ControlRegDesc
+	OUT UCHAR* OldMode
 );
 
 NTSTATUS

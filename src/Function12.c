@@ -272,8 +272,7 @@ RmiSetReportingMode(
 	IN RMI4_CONTROLLER_CONTEXT* ControllerContext,
 	IN SPB_CONTEXT* SpbContext,
 	IN UCHAR NewMode,
-	OUT UCHAR* OldMode,
-	IN PRMI_REGISTER_DESCRIPTOR ControlRegDesc
+	OUT UCHAR* OldMode
 )
 /*++
 
@@ -337,9 +336,9 @@ RmiSetReportingMode(
 		goto exit;
 	}
 
-	indexCtrl20 = RmiGetRegisterIndex(ControlRegDesc, F12_2D_CTRL20);
+	indexCtrl20 = RmiGetRegisterIndex(&ControllerContext->ControlRegDesc, F12_2D_CTRL20);
 
-	if (indexCtrl20 == ControlRegDesc->NumRegisters)
+	if (indexCtrl20 == ControllerContext->ControlRegDesc.NumRegisters)
 	{
 		Trace(
 			TRACE_LEVEL_ERROR,
@@ -350,13 +349,13 @@ RmiSetReportingMode(
 		goto exit;
 	}
 
-	if (ControlRegDesc->Registers[indexCtrl20].RegisterSize != sizeof(reportingControl))
+	if (ControllerContext->ControlRegDesc.Registers[indexCtrl20].RegisterSize != sizeof(reportingControl))
 	{
 		Trace(
 			TRACE_LEVEL_ERROR,
 			TRACE_INIT,
 			"Unexpected F12_2D_Ctrl20 register size, size=%lu, expected=%lu",
-			ControlRegDesc->Registers[indexCtrl20].RegisterSize,
+			ControllerContext->ControlRegDesc.Registers[indexCtrl20].RegisterSize,
 			sizeof(reportingControl)
 		);
 
@@ -436,9 +435,6 @@ RmiConfigureFunction12(
 	USHORT data_offset = 0;
 	PRMI_REGISTER_DESC_ITEM item;
 
-	RMI_REGISTER_DESCRIPTOR ControlRegDesc;
-	RMI_REGISTER_DESCRIPTOR DataRegDesc;
-
 	//
 	// Find 2D touch sensor function and configure it
 	//
@@ -508,7 +504,7 @@ RmiConfigureFunction12(
 
 	//ControllerContext->HasDribble = !!(buf & BIT(3));
 
-	/*status = RmiReadRegisterDescriptor(
+	status = RmiReadRegisterDescriptor(
 		SpbContext,
 		queryF12Addr,
 		&ControllerContext->QueryRegDesc
@@ -523,13 +519,13 @@ RmiConfigureFunction12(
 			"Failed to read the Query Register Descriptor - Status=%X",
 			status);
 		goto exit;
-	}*/
+	}
 	queryF12Addr += 3;
 
 	status = RmiReadRegisterDescriptor(
 		SpbContext,
 		queryF12Addr,
-		&ControlRegDesc
+		&ControllerContext->ControlRegDesc
 	);
 
 	if (!NT_SUCCESS(status))
@@ -547,7 +543,7 @@ RmiConfigureFunction12(
 	status = RmiReadRegisterDescriptor(
 		SpbContext,
 		queryF12Addr,
-		&DataRegDesc
+		&ControllerContext->DataRegDesc
 	);
 
 	if (!NT_SUCCESS(status))
@@ -562,7 +558,7 @@ RmiConfigureFunction12(
 	}
 	queryF12Addr += 3;
 	ControllerContext->PacketSize = RmiRegisterDescriptorCalcSize(
-		&DataRegDesc
+		&ControllerContext->DataRegDesc
 	);
 
 	// Skip rmi_f12_read_sensor_tuning for the prototype.
@@ -574,10 +570,10 @@ RmiConfigureFunction12(
 	* attention report check to see if the device is receiving data from
 	* HID attention reports.
 	*/
-	item = RmiGetRegisterDescItem(&DataRegDesc, 0);
+	item = RmiGetRegisterDescItem(&ControllerContext->DataRegDesc, 0);
 	if (item) data_offset += (USHORT)item->RegisterSize;
 
-	item = RmiGetRegisterDescItem(&DataRegDesc, 1);
+	item = RmiGetRegisterDescItem(&ControllerContext->DataRegDesc, 1);
 	if (item != NULL)
 	{
 		ControllerContext->Data1Offset = data_offset;
@@ -608,8 +604,7 @@ RmiConfigureFunction12(
 		ControllerContext,
 		SpbContext,
 		RMI_F12_REPORTING_MODE_CONTINUOUS,
-		NULL,
-		&ControlRegDesc);
+		NULL);
 
 	//setup interupt
 	ControllerContext->Config.DeviceSettings.InterruptEnable |= 0x1 << index;
@@ -688,7 +683,10 @@ RmiReadRegisterDescriptor(
 	{
 		for (b = 0; b < 8; b++)
 		{
-			if (buf[i] & (0x1 << b)) bitmap_set(Rdesc->PresenceMap, map_offset, 1);
+			if (buf[i] & (0x1 << b))
+			{
+				bitmap_set(Rdesc->PresenceMap, map_offset, 1);
+			}
 			++map_offset;
 		}
 	}
@@ -766,13 +764,14 @@ RmiReadRegisterDescriptor(
 
 		map_offset = 0;
 
-		item->NumSubPackets = 0;
 		do
 		{
 			for (b = 0; b < 7; b++)
 			{
 				if (struct_buf[offset] & (0x1 << b))
+				{
 					bitmap_set(item->SubPacketMap, map_offset, 1);
+				}
 				++map_offset;
 			}
 		} while (struct_buf[offset++] & 0x80);
@@ -782,9 +781,9 @@ RmiReadRegisterDescriptor(
 		Trace(
 			TRACE_LEVEL_INFORMATION,
 			TRACE_INIT,
-			"%s: reg: %d reg size: %ld subpackets: %d\n",
+			"%s: reg: %d reg size: %ld subpackets: %d num reg: %d",
 			__func__,
-			item->Register, item->RegisterSize, item->NumSubPackets
+			item->Register, item->RegisterSize, item->NumSubPackets, Rdesc->NumRegisters
 		);
 
 		reg = find_next_bit(Rdesc->PresenceMap, RMI_REG_DESC_PRESENSE_BITS, reg + 1);
@@ -851,7 +850,8 @@ const PRMI_REGISTER_DESC_ITEM RmiGetRegisterDescItem(
 	for (i = 0; i < Rdesc->NumRegisters; i++)
 	{
 		item = &Rdesc->Registers[i];
-		if (item->Register == reg) return item;
+		if (item->Register == reg) 
+			return item;
 	}
 
 	return NULL;

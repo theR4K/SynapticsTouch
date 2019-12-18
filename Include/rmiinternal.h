@@ -153,6 +153,25 @@ typedef struct _RMI4_CONTROLLER_CONTEXT
 	//
 	BKL_CONTEXT* BklContext;
 
+	//
+	// RMI4 F12 state
+	//
+
+	/*
+		!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+	
+		DO NOT remove these. Even if the variables are not
+		used by any function down the line, these have an effect
+		on memory allocation. If you remove these and make them
+		local to a function, you will BREAK F12 and register
+		readings.
+
+		!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+	*/
+
+	RMI_REGISTER_DESCRIPTOR QueryRegDesc;
+	RMI_REGISTER_DESCRIPTOR ControlRegDesc;
+	RMI_REGISTER_DESCRIPTOR DataRegDesc;
 	size_t PacketSize;
 
 	USHORT Data1Offset;
