@@ -58,9 +58,6 @@
     <ClCompile Include="..\src\Function12.c">
       <Filter>Source\Functions</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\functions.c">
-      <Filter>Source\Functions</Filter>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\include\winphoneabi.h">

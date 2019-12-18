@@ -25,7 +25,29 @@
 #include "debug.h"
 #include "buttonreporting.h"
 #include "hid.h"
+#include "Function11.h"
+#include "Function12.h"
 //#include "report.tmh"
+
+NTSTATUS
+RmiGetTouchesFromController(
+	IN RMI4_CONTROLLER_CONTEXT* ControllerContext,
+	IN SPB_CONTEXT* SpbContext
+)
+{
+	NTSTATUS status;
+
+	if (ControllerContext->IsF12Digitizer)
+	{
+		status = GetTouchesFromF12(ControllerContext, SpbContext);
+	}
+	else
+	{
+		status = GetTouchesFromF11(ControllerContext, SpbContext);
+	}
+
+	return status;
+}
 
 VOID
 RmiFillNextHidReportFromCache(

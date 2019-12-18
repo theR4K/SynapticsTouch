@@ -1,5 +1,8 @@
 #pragma once
-//#include "compat.h"
+
+#ifndef __COMPAT_H__
+#define __COMPAT_H__
+#endif
 
 #ifndef __BITOPS_H__
 #define __BITOPS_H__
@@ -23,7 +26,7 @@
 #define BIT_WORD(nr)		((nr) / BITS_PER_LONG)
 
 #define BITMAP_FIRST_WORD_MASK(start) (~0UL << ((start) & (BITS_PER_LONG - 1)))
-#define BITMAP_LAST_WORD_MASK(nbits) (~0UL >> ((-(nbits)) & (BITS_PER_LONG - 1)))
+#define BITMAP_LAST_WORD_MASK(nbits) (~0UL >> (-(nbits) & (BITS_PER_LONG - 1)))
 
 #define __round_mask_ul(x, y) ((unsigned long) ((y)-1))
 #define round_down_ul(x, y) ((x) & ~__round_mask_ul(x, y))
@@ -39,4 +42,3 @@ unsigned long find_first_bit(const unsigned long* addr, unsigned long size);
 unsigned long find_next_bit(const unsigned long* addr, unsigned long size, unsigned long offset);
 
 #endif
-#pragma once

@@ -27,9 +27,3 @@ RmiConvertF11ToPhysical(
 	IN RMI4_F11_CTRL_REGISTERS_LOGICAL* Logical,
 	IN RMI4_F11_CTRL_REGISTERS* Physical
 );
-
-NTSTATUS
-GetTouchesFromF11(
-	IN RMI4_CONTROLLER_CONTEXT* ControllerContext,
-	IN SPB_CONTEXT* SpbContext
-);

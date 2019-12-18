@@ -32,7 +32,18 @@ RmiSetReportingMode(
 );
 
 NTSTATUS
-GetTouchesFromF12(
-	IN RMI4_CONTROLLER_CONTEXT* ControllerContext,
-	IN SPB_CONTEXT* SpbContext
+RmiReadRegisterDescriptor(
+	IN SPB_CONTEXT* Context,
+	IN UCHAR Address,
+	IN PRMI_REGISTER_DESCRIPTOR Rdesc
+);
+
+size_t
+RmiRegisterDescriptorCalcSize(
+	IN PRMI_REGISTER_DESCRIPTOR Rdesc
+);
+
+const PRMI_REGISTER_DESC_ITEM RmiGetRegisterDescItem(
+	PRMI_REGISTER_DESCRIPTOR Rdesc,
+	USHORT reg
 );
