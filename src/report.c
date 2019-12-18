@@ -354,14 +354,13 @@ exit:
 	return status;
 }
 
-
 NTSTATUS
 TchServiceInterrupts(
 	IN VOID* ControllerContext,
 	IN SPB_CONTEXT* SpbContext,
 	IN PHID_INPUT_REPORT HidReport,
 	IN UCHAR InputMode,
-	IN BOOLEAN* ServicingComplete
+	OUT BOOLEAN* ServicingComplete
 )
 /*++
 

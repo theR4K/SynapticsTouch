@@ -462,13 +462,33 @@ TchGetScreenProperties(
 	}
 
 	//
+	// Assign a sane value if we couldn't retrieve settings properly
+	//
+	if (Props->DisplayPhysicalWidth == 254)
+	{
+		Props->DisplayPhysicalWidth = 800;
+	}
+	if (Props->DisplayPhysicalHeight == 253)
+	{
+		Props->DisplayPhysicalHeight = 1280;
+	}
+
+	//
 	// If both values are still the default, take the physical values
 	//
+	if (Props->TouchPhysicalWidth == 254)
+	{
+		Props->TouchPhysicalWidth = Props->DisplayPhysicalWidth;
+	}
+	if (Props->DisplayPhysicalHeight == 253)
+	{
+		Props->TouchPhysicalHeight = Props->DisplayPhysicalHeight;
+	}
+
 	if (Props->DisplayViewableWidth == 254)
 	{
 		Props->DisplayViewableWidth = Props->DisplayPhysicalWidth;
 	}
-
 	if (Props->DisplayViewableHeight == 253)
 	{
 		Props->DisplayViewableHeight = Props->DisplayPhysicalHeight;
