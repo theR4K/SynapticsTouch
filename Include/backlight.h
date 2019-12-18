@@ -24,13 +24,16 @@
 #include <hwn.h>
 #include "winphoneabi.h"
 
-#define BKL_REGISTRY_PATH          L"\\Registry\\Machine\\SYSTEM\\TOUCH\\BUTTONS\\BACKLIGHT"
+#define BKL_REGISTRY_PATH            L"\\Registry\\Machine\\SYSTEM\\TOUCH\\BUTTONS\\BACKLIGHT"
 
-#define BKL_NUM_LEDS               L"LedCount"
-#define BKL_LED_INDEX_LIST         L"LedIndexList"
-#define BKL_LUX_TABLE_RANGES       L"MilliLuxRanges"
-#define BKL_LUX_TABLE_INTENSITIES  L"IntensityMappings"
-#define BKL_INACTIVITY_TIMEOUT     L"InactivityTimeout"
+#define BKL_NUM_LEDS                 L"LedCount"
+#define BKL_LED_INDEX_LIST           L"LedIndexList"
+#define BKL_LUX_TABLE_RANGES         L"MilliLuxRanges"
+#define BKL_LUX_TABLE_INTENSITIES    L"IntensityMappings"
+#define BKL_LUX_TABLE_INTENSITIES_0  L"IntensityMappings0"
+#define BKL_LUX_TABLE_INTENSITIES_1  L"IntensityMappings1"
+#define BKL_LUX_TABLE_INTENSITIES_2  L"IntensityMappings2"
+#define BKL_INACTIVITY_TIMEOUT       L"InactivityTimeout"
 
 #define BKL_NUM_LEVELS_DEFAULT     4
 #define BKL_DEFAULT_INTENSITY      5        // percent
