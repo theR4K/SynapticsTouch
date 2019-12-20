@@ -33,6 +33,73 @@
 #pragma alloc_text(PAGE, OnContextCleanup)
 #endif
 
+void
+parse(UNICODE_STRING str, int* output)
+{
+    PUNICODE_STRING temp = ExAllocatePoolWithTag(NonPagedPool, 14, TOUCH_POOL_TAG);
+    WCHAR buff[5];
+    CHAR i = 0;
+    CHAR j = 0;
+    CHAR min = 0;
+    ULONG val = 0;
+
+    while(i < str.Length && i < 5 && ((str.Buffer[i] & 0xff) != ','))
+    {
+        buff[i] = str.Buffer[i];
+        i++;
+    }
+    
+    RtlUnicodeStringInit(temp, buff);
+    RtlUnicodeStringToInteger(temp, 10, &val);
+    output[j++] = val;
+    if(((str.Buffer[i] & 0xff) != ','))
+        return; //error
+
+    i++;
+    min = i;
+    RtlZeroMemory(buff, 10);
+    while(i<str.Length && i-min < 5 && ((str.Buffer[i] & 0xff) != ' '))
+    {
+        buff[i - min] = str.Buffer[i];
+        i++;
+    }
+
+    RtlUnicodeStringInit(temp, buff);
+    RtlUnicodeStringToInteger(temp, 10, &val);
+    output[j++] = val;
+    if(((str.Buffer[i] & 0xff) != ' '))
+        return; //error
+
+    i++;
+    min = i;
+    RtlZeroMemory(buff, 10);
+    while(i < str.Length && i - min < 5 && ((str.Buffer[i] & 0xff) != ','))
+    {
+        buff[i - min] = str.Buffer[i];
+        i++;
+    }
+
+    RtlUnicodeStringInit(temp, buff);
+    RtlUnicodeStringToInteger(temp, 10, &val);
+    output[j++] = val;
+    if(((str.Buffer[i] & 0xff) != ','))
+        return; //error
+
+    i++;
+    min = i;
+    RtlZeroMemory(buff, 10);
+    while(i < str.Length && i - min < 5)
+    {
+        buff[i - min] = str.Buffer[i];
+        i++;
+    }
+    RtlUnicodeStringInit(temp, buff);
+    RtlUnicodeStringToInteger(temp, 10, &val);
+    output[j++] = val;
+
+    ExFreePoolWithTag(temp, TOUCH_POOL_TAG);
+}
+
 NTSTATUS
 DriverEntry(
 	IN PDRIVER_OBJECT DriverObject,
@@ -57,6 +124,12 @@ Return Value:
 
 --*/
 {
+    /*DECLARE_CONST_UNICODE_STRING(testStr, L"1366,12 756,81");
+    int buff[4];
+    parse(testStr, buff);
+    for(int i = 0; i < 4;i++)
+        DbgPrintEx(DPFLTR_IHVDRIVER_ID, DPFLTR_ERROR_LEVEL, "ST: %u\n",buff[i]);*/
+
 	DbgPrintEx(DPFLTR_IHVDRIVER_ID, DPFLTR_ERROR_LEVEL, "ST: Welcome To Synaptics\n");
 	WDF_OBJECT_ATTRIBUTES attributes;
 	WDF_DRIVER_CONFIG config;
