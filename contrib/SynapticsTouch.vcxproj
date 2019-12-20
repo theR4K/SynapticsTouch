@@ -124,7 +124,7 @@
       <WppEnabled>false</WppEnabled>
       <WppKernelMode>true</WppKernelMode>
       <AdditionalIncludeDirectories>..\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <DisableSpecificWarnings>4242;4214;4201;4244;4146;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+      <DisableSpecificWarnings>4201;4214;4146;%(DisableSpecificWarnings)</DisableSpecificWarnings>
       <AdditionalOptions Condition="'$(Configuration)'=='Debug'">/D_DEBUG %(AdditionalOptions)</AdditionalOptions>
       <WppMinimalRebuildFromTracking Condition="'$(Configuration)'=='Debug'">false</WppMinimalRebuildFromTracking>
       <WppMinimalRebuildFromTracking Condition="'$(Configuration)'=='Release'">false</WppMinimalRebuildFromTracking>

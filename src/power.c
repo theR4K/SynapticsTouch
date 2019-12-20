@@ -261,11 +261,10 @@ Return Value:
 	//
 	// Invalidate state
 	//
-	controller->TouchesReported = 0;
-	controller->TouchesTotal = 0;
 	controller->FingerCache.FingerSlotValid = 0;
 	controller->FingerCache.FingerSlotDirty = 0;
 	controller->FingerCache.FingerDownCount = 0;
+    controller->HidQueueCount = 0;
 
 	WdfWaitLockRelease(controller->ControllerLock);
 

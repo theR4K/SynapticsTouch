@@ -111,7 +111,7 @@ GetTouchesFromF11(
 	status = SpbReadDataSynchronously(
 		SpbContext,
 		ControllerContext->Descriptors[index].DataBase +
-		Ceil(ControllerContext->MaxFingers, 4),
+		(Ceil(ControllerContext->MaxFingers, 4) & 0xFF),
 		&FingerPosRegisters[0],
 		sizeof(RMI4_F11_DATA_POSITION) * (highestSlot + 1lu));
 

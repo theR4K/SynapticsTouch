@@ -9,7 +9,7 @@ void bitmap_set(unsigned long* map, unsigned int start, int len)
 	unsigned long* p = map + BIT_WORD(start);
 	const unsigned int size = start + len;
 	int bits_to_set = BITS_PER_LONG - (start % BITS_PER_LONG);
-	unsigned long mask_to_set = BITMAP_FIRST_WORD_MASK(start);
+	unsigned long mask_to_set = BITMAP_FIRST_WORD_MASK(start);//c4146 maybe need change to signed?
 
 	while (len - bits_to_set >= 0)
 	{
@@ -27,7 +27,7 @@ void bitmap_set(unsigned long* map, unsigned int start, int len)
 	}
 }
 
-int bitmap_weight(const unsigned long* bitmap, unsigned int bits)
+int bitmap_weight(const unsigned long* bitmap, unsigned int bits)//c4146 maybe need change to signed?
 {
 	unsigned int k, lim = bits / BITS_PER_LONG;
 	int w = 0;

@@ -154,9 +154,6 @@ typedef struct _RMI4_CONTROLLER_CONTEXT
 	//
 	// Current touch state
 	//
-	int TouchesReported;
-	int KeyTouchesReported;
-	int TouchesTotal;
 	RMI4_FINGER_CACHE FingerCache;
 
 	//
@@ -228,7 +225,6 @@ UINT8 RmiGetRegisterIndex(
 	PRMI_REGISTER_DESCRIPTOR Rdesc,
 	USHORT reg
 );
-
 
 NTSTATUS
 GetNextHidReport(

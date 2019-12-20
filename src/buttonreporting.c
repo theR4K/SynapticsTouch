@@ -116,11 +116,11 @@ Return Value:
     {
         if(ReversedKeys)
         {
-            ControllerContext->ButtonsCache.PhysicalState[i] = ((dataF1A.Raw >> (RMI4_MAX_BUTTONS - i - 1)) & 0x1);
+            ControllerContext->ButtonsCache.PhysicalState[i] = ((dataF1A.Raw >> i) & 0x1);
         }
         else
         {
-            ControllerContext->ButtonsCache.PhysicalState[i] = ((dataF1A.Raw >> i) & 0x1);
+            ControllerContext->ButtonsCache.PhysicalState[i] = ((dataF1A.Raw >> (RMI4_MAX_BUTTONS - i - 1)) & 0x1);
         }
     }
 
@@ -144,9 +144,9 @@ FillButtonsReportFromCache(
     //
 
     //
-    PHID_INPUT_REPORT hidReport1=NULL;
-    PHID_INPUT_REPORT hidReport2 = NULL;
-    PHID_KEY_REPORT hidKeys = NULL;
+    PHID_INPUT_REPORT hidReport1;
+    PHID_INPUT_REPORT hidReport2;
+    PHID_KEY_REPORT hidKeys;
 
     if(!data[1] && prevData[1]) //when up key
     {
@@ -226,25 +226,25 @@ TchHandleButtonArea(
 	//
 	// Hardcoded values now for RX100
 	//
-	ULONG ButtonAreaXMin = 0;
-	ULONG ButtonAreaYMin = 1280;
-	ULONG ButtonAreaXMax = 768;
-	ULONG ButtonAreaYMax = 1390;
-
-	ULONG BackAreaXMin = 0;
-	ULONG BackAreaYMin = 1300;
-	ULONG BackAreaXMax = 216;
-	ULONG BackAreaYMax = 1390;
-
-	ULONG StartAreaXMin = 297;
-	ULONG StartAreaYMin = 1300;
-	ULONG StartAreaXMax = 472;
-	ULONG StartAreaYMax = 1390;
-
-	ULONG SearchAreaXMin = 553;
-	ULONG SearchAreaYMin = 1300;
-	ULONG SearchAreaXMax = 768;
-	ULONG SearchAreaYMax = 1390;
+    ULONG ButtonAreaXMin = 0;
+    ULONG ButtonAreaYMin = 1280;
+    ULONG ButtonAreaXMax = 768;
+    ULONG ButtonAreaYMax = 1390;
+                           
+    ULONG BackAreaXMin =   0;
+    ULONG BackAreaYMin =   1300;
+    ULONG BackAreaXMax =   216;
+    ULONG BackAreaYMax =   1390;
+                           
+    ULONG StartAreaXMin =  297;
+    ULONG StartAreaYMin =  1300;
+    ULONG StartAreaXMax =  472;
+    ULONG StartAreaYMax =  1390;
+                           
+    ULONG SearchAreaXMin = 553;
+    ULONG SearchAreaYMin = 1300;
+    ULONG SearchAreaXMax = 768;
+    ULONG SearchAreaYMax = 1390;
 
 	//
 	// Swap the axes reported by the touch controller if requested

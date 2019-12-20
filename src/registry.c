@@ -641,7 +641,7 @@ exit:
 		Trace(
 			TRACE_LEVEL_WARNING,
 			TRACE_FLAG_REGISTRY,
-			"Error reading registry config, using defaults! - STATUS:%X",//ST//
+			"Error reading registry config, using defaults! - STATUS:%X",
 			status);
 
 		status = STATUS_SUCCESS;

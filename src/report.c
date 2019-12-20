@@ -52,8 +52,7 @@ RmiGetTouchesFromController(
 VOID
 RmiFillHidReportFromCache(
     IN RMI4_CONTROLLER_CONTEXT* ControllerContext,
-	IN PTOUCH_SCREEN_PROPERTIES Props,
-	IN int TouchesTotal
+	IN PTOUCH_SCREEN_PROPERTIES Props
 )
 /*++
 
@@ -88,13 +87,14 @@ Return Value:
 	int currentFingerIndex;
 	int fingersToReport;
 	int i;
-	USHORT SctatchX = 0, ScratchY = 0;
+    USHORT SctatchX = 0;
+    USHORT ScratchY = 0;
 
     int touchesReported = 0;
     int keyTouchesReported = 0;
 
     //first report keys
-    for(i = 0; i < TouchesTotal; i++)
+    for(i = 0; i < fingerCache->FingerDownCount; i++)
     {
         USHORT X1 = (USHORT)fingerCache->FingerSlot[fingerCache->FingerDownOrder[i]].x;
         USHORT Y1 = (USHORT)fingerCache->FingerSlot[fingerCache->FingerDownOrder[i]].y;
@@ -105,7 +105,8 @@ Return Value:
         {
             fingerCache->IsKey[i] = TRUE;
             keyTouchesReported++;
-            buttonsCache->PhysicalState[ButtonIndex - 1] = fingerCache->FingerSlot[fingerCache->FingerDownOrder[i]].fingerStatus;
+            if(ButtonIndex != BUTTON_UNKNOWN)
+                buttonsCache->PhysicalState[ButtonIndex - 1] = fingerCache->FingerSlot[fingerCache->FingerDownOrder[i]].fingerStatus;
         }
     }
     if(keyTouchesReported > 0)
@@ -119,13 +120,12 @@ Return Value:
                 "error reporting touch buttons, status: %x",
                 status
             );
-            goto exit;
         }
     }
+    
+    UCHAR touchesToReport = ((fingerCache->FingerDownCount - keyTouchesReported) & 0xFF);
 
-
-
-    UCHAR touchesToReport = TouchesTotal - keyTouchesReported;
+    //and report touches
     while(touchesToReport>0)
     {
         fingersToReport = min(
@@ -133,7 +133,7 @@ Return Value:
             SYNAPTICS_TOUCH_DIGITIZER_FINGER_REPORT_COUNT
         );
 
-        PHID_INPUT_REPORT hidReport = NULL;
+        PHID_INPUT_REPORT hidReport;
         status = GetNextHidReport(ControllerContext, &hidReport);
         if(!NT_SUCCESS(status))
         {
@@ -224,7 +224,6 @@ Return Value:
 #endif
         }
 
-        DbgPrintEx(DPFLTR_IHVDRIVER_ID, DPFLTR_ERROR_LEVEL, "hid report in %x is %x\n", hidReport, *hidReport);
     }
 
 exit:
@@ -290,15 +289,13 @@ Return Value:
 		//
 		// Prepare to report touches via HID reports
 		//
-		ControllerContext->TouchesReported = 0;
-		ControllerContext->KeyTouchesReported = 0;
-		ControllerContext->TouchesTotal =
-			ControllerContext->FingerCache.FingerDownCount;
+        for(int i = 0; i < RMI4_MAX_TOUCHES; i++)
+            ControllerContext->FingerCache.IsKey[i] = FALSE;
 
 		//
 		// If no touches are present return that no data needed to be reported
 		//
-		if (ControllerContext->TouchesTotal == 0)
+		if (ControllerContext->FingerCache.FingerDownCount == 0)
 		{
 			status = STATUS_NO_DATA_DETECTED;
 			goto exit;
@@ -322,12 +319,10 @@ Return Value:
 	//
 	// Fill report with the next (max of two) cached touches
 	//
-
-        RmiFillHidReportFromCache(
-            ControllerContext,
-            &ControllerContext->Props,
-            ControllerContext->TouchesTotal
-        );
+    RmiFillHidReportFromCache(
+        ControllerContext,
+        &ControllerContext->Props
+    );
 
 	//
 	// Update the caller if we still have outstanding touches to report
@@ -335,7 +330,7 @@ Return Value:
 	//if (ControllerContext->TouchesReported < ControllerContext->TouchesTotal)
 
 exit:
-        DbgPrintEx(DPFLTR_IHVDRIVER_ID, DPFLTR_ERROR_LEVEL, "content %x\n", ControllerContext->HidQueue[0]);
+
 	return status;
 }
 
@@ -510,7 +505,7 @@ exit:
     *HidReports = controller->HidQueue;
     (*HidReportsLength) = controller->HidQueueCount;
     controller->HidQueueCount = 0;
-    DbgPrintEx(DPFLTR_IHVDRIVER_ID, DPFLTR_ERROR_LEVEL, "content after send %x\n", controller->HidQueue[0]);
+
 	//
 	// Turn on capacitive key backlights that may have timed out
 	// due to user inactivity
@@ -521,8 +516,6 @@ exit:
 	}
 
 	WdfWaitLockRelease(controller->ControllerLock);
-    DbgPrintEx(DPFLTR_IHVDRIVER_ID, DPFLTR_ERROR_LEVEL, "content after send and lock %x\n", controller->HidQueue[0]);
-
 
 	return status;
 }

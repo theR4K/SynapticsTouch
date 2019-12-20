@@ -62,7 +62,8 @@ OnInterruptIsr(
 	NTSTATUS status;
 	WDFREQUEST request;
 	BOOLEAN servicingComplete;
-	PHID_INPUT_REPORT hidReportsFromDriver = NULL;
+	PHID_INPUT_REPORT hidReportsFromDriver;
+    int hidReportsCount = 0;
 	PHID_INPUT_REPORT hidReportRequestBuffer;
 	size_t hidReportRequestBufferLength;
 
@@ -86,31 +87,28 @@ OnInterruptIsr(
 	// Service the device interrupt
 	//
 
-		//
-		// Service touch interrupts. Success indicates we have a report
-		// to complete to Hid. ServicingComplete indicates another report
-		// is required to continue servicing this interrupt.
-		//
-    int reportsLen = 0;
+	//
+	// Service touch interrupts. Success indicates we have a report
+	// to complete to Hid. ServicingComplete indicates another report
+	// is required to continue servicing this interrupt.
+	//
     status = TchServiceInterrupts(
         devContext->TouchContext,
         &devContext->I2CContext,
         devContext->InputMode,
         &hidReportsFromDriver,
-        &reportsLen
+        &hidReportsCount
     );
 
 	if (!NT_SUCCESS(status))
 	{
 		//
-		// hidReportFromDriver was not filled
+		// error on interupt servicing
 		//
         goto exit;
 	}
 
-    DbgPrintEx(DPFLTR_IHVDRIVER_ID, DPFLTR_ERROR_LEVEL, "reported %u reports in %x address\n", reportsLen, hidReportsFromDriver);
-
-    for(int i = 0; i < reportsLen; i++)
+    for(int i = 0; i < hidReportsCount; i++)
     {
 		//
 		// Complete a HIDClass request if one is available
@@ -165,11 +163,11 @@ OnInterruptIsr(
 			}
 			else
 			{
-				RtlCopyMemory(
-					hidReportRequestBuffer,
-					&hidReportsFromDriver[i],
-					sizeof(HID_INPUT_REPORT));
-                DbgPrintEx(DPFLTR_IHVDRIVER_ID, DPFLTR_ERROR_LEVEL, "copy from %x(%x) to %x, content of hid %x\n", &hidReportsFromDriver[i], hidReportsFromDriver+sizeof(HID_INPUT_REPORT)*i, hidReportRequestBuffer,*hidReportsFromDriver);
+                RtlCopyMemory(
+                    hidReportRequestBuffer,
+                    &hidReportsFromDriver[i],
+                    sizeof(HID_INPUT_REPORT));
+
 				WdfRequestSetInformation(request, sizeof(HID_INPUT_REPORT));
 			}
 		}
