@@ -27,19 +27,8 @@
 #include "Function12.h"
 //#include "init.tmh"
 
-
-
-
 #pragma warning(push)
 #pragma warning(disable:4242) // Conversion, possible loss of data
-
-//
-// The logical values come from the registry and are hence DWORDs but the 
-// physical registers are only 8 bits wide so we use the lower 8 bits of the
-// logical value.
-//
-
-
 
 NTSTATUS
 RmiChangePage(

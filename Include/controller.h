@@ -27,6 +27,7 @@
 #include <reshub.h>
 #include <kbdmou.h>
 #include "spb.h"
+#include "hid.h"
 
 #define TOUCH_POOL_TAG                  (ULONG)'cuoT'
 
@@ -52,16 +53,10 @@
 
 #define FINGER_STATUS                   0x01 // finger down
 
-#define KEY_DOWN_START                  (1 << 0)
-#define KEY_DOWN_SEARCH                 (1 << 1)
-#define KEY_DOWN_BACK                   (1 << 2)
-
 #define REPORTID_MTOUCH                 1
 #define REPORTID_MOUSE                  3
 #define REPORTID_FEATURE                7
 #define REPORTID_MAX_COUNT              8
-#define REPORTID_CAPKEY_KEYBOARD        4
-#define REPORTID_CAPKEY_CONSUMER        5
 
 // 
 // Type defintions
@@ -85,7 +80,7 @@ typedef struct _HID_TOUCH_REPORT
 	{
 		struct
 		{
-			HID_CONTACT_POINT Contacts[2];
+			HID_CONTACT_POINT Contacts[SYNAPTICS_TOUCH_DIGITIZER_FINGER_REPORT_COUNT];
 			UCHAR  ActualCount;
 			USHORT ScanTime;
 		} InputReport;

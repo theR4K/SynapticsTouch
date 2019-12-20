@@ -1,6 +1,4 @@
 #pragma once
-#include "ntdef.h"
-
 #ifndef __HEWEIGHT_H__
 #define __HEWEIGHT_H__
 

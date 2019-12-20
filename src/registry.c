@@ -609,7 +609,7 @@ TchRegistryGetControllerSettings(
 
 	status = RtlQueryRegistryValues(
 		RTL_REGISTRY_ABSOLUTE,
-		TOUCH_SETTINGS_REG_KEY,
+		TOUCH_CONTROLLER_SETTINGS_REG_KEY,
 		regTable,
 		NULL,
 		NULL);
@@ -651,7 +651,6 @@ exit:
 	{
 		controller->Config.TouchSettings.SensorMaxXPos = controller->Props.DisplayPhysicalWidth;
 	}
-
 	if (controller->Config.TouchSettings.SensorMaxYPos == 253)
 	{
 		controller->Config.TouchSettings.SensorMaxYPos = controller->Props.DisplayPhysicalHeight;

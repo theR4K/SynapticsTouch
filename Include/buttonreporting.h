@@ -16,6 +16,7 @@ RmiServiceCapacitiveButtonInterrupt(
 	IN RMI4_CONTROLLER_CONTEXT* ControllerContext,
 	IN SPB_CONTEXT* SpbContext,
 	IN PHID_INPUT_REPORT HidReport,
+	IN BOOLEAN ReversedKeys,
 	OUT BOOLEAN* PendingTouches
 );
 

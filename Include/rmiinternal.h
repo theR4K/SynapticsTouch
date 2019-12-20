@@ -72,7 +72,8 @@ typedef struct _RMI4_FUNCTION_DESCRIPTOR
 #define RMI4_SECONDS_TO_HALF_SECONDS(n) 2*n
 
 #define RMI4_INTERRUPT_BIT_2D_TOUCH               0x04
-#define RMI4_INTERRUPT_BIT_0D_CAP_BUTTON          0x20
+#define RMI4_INTERRUPT_BIT_0D_CAP_BUTTON          0x10
+#define RMI4_INTERRUPT_BIT_0D_CAP_BUTTON_REVERSED 0x20
 
 #define TOUCH_POOL_TAG_F12              (ULONG)'21oT'
 
@@ -145,6 +146,7 @@ typedef struct _RMI4_CONTROLLER_CONTEXT
 	// Current touch state
 	//
 	int TouchesReported;
+	int KeyTouchesReported;
 	int TouchesTotal;
 	RMI4_FINGER_CACHE FingerCache;
 
@@ -153,6 +155,25 @@ typedef struct _RMI4_CONTROLLER_CONTEXT
 	//
 	BKL_CONTEXT* BklContext;
 
+	//
+	// RMI4 F12 state
+	//
+
+	/*
+		!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+	
+		DO NOT remove these. Even if the variables are not
+		used by any function down the line, these have an effect
+		on memory allocation. If you remove these and make them
+		local to a function, you will BREAK F12 and register
+		readings.
+
+		!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+	*/
+
+	RMI_REGISTER_DESCRIPTOR QueryRegDesc;
+	RMI_REGISTER_DESCRIPTOR ControlRegDesc;
+	RMI_REGISTER_DESCRIPTOR DataRegDesc;
 	size_t PacketSize;
 
 	USHORT Data1Offset;
@@ -193,23 +214,6 @@ RmiGetTouchesFromController(
 );
 
 UINT8 RmiGetRegisterIndex(
-	PRMI_REGISTER_DESCRIPTOR Rdesc,
-	USHORT reg
-);
-
-NTSTATUS
-RmiReadRegisterDescriptor(
-	IN SPB_CONTEXT* Context,
-	IN UCHAR Address,
-	IN PRMI_REGISTER_DESCRIPTOR Rdesc
-);
-
-size_t
-RmiRegisterDescriptorCalcSize(
-	IN PRMI_REGISTER_DESCRIPTOR Rdesc
-);
-
-const PRMI_REGISTER_DESC_ITEM RmiGetRegisterDescItem(
 	PRMI_REGISTER_DESCRIPTOR Rdesc,
 	USHORT reg
 );
