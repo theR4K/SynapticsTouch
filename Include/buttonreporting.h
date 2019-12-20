@@ -15,9 +15,7 @@ NTSTATUS
 RmiServiceCapacitiveButtonInterrupt(
 	IN RMI4_CONTROLLER_CONTEXT* ControllerContext,
 	IN SPB_CONTEXT* SpbContext,
-	IN PHID_INPUT_REPORT HidReport,
-	IN BOOLEAN ReversedKeys,
-	OUT BOOLEAN* PendingTouches
+	IN BOOLEAN ReversedKeys
 );
 
 REPORTED_BUTTON
@@ -25,4 +23,9 @@ TchHandleButtonArea(
 	IN ULONG ControllerX,
 	IN ULONG ControllerY,
 	IN PTOUCH_SCREEN_PROPERTIES Props
+);
+
+NTSTATUS
+FillButtonsReportFromCache(
+    IN RMI4_CONTROLLER_CONTEXT* ControllerContext
 );

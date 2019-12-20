@@ -25,9 +25,7 @@ NTSTATUS
 RmiServiceCapacitiveButtonInterrupt(
 	IN RMI4_CONTROLLER_CONTEXT* ControllerContext,
 	IN SPB_CONTEXT* SpbContext,
-	IN PHID_INPUT_REPORT HidReport,
-	IN BOOLEAN ReversedKeys,
-	OUT BOOLEAN* PendingTouches
+	IN BOOLEAN ReversedKeys
 )
 /*++
 
@@ -50,7 +48,6 @@ Return Value:
 --*/
 {
 	RMI4_F1A_DATA_REGISTERS dataF1A;
-	PHID_KEY_REPORT hidKeys;
 	int index;
 	NTSTATUS status;
 
@@ -115,63 +112,107 @@ Return Value:
 		goto exit;
 	}
 
-	RtlZeroMemory(HidReport, sizeof(HID_INPUT_REPORT));
+    for(int i = 0; i < RMI4_MAX_BUTTONS; i++)
+    {
+        if(ReversedKeys)
+        {
+            ControllerContext->ButtonsCache.PhysicalState[i] = ((dataF1A.Raw >> (RMI4_MAX_BUTTONS - i - 1)) & 0x1);
+        }
+        else
+        {
+            ControllerContext->ButtonsCache.PhysicalState[i] = ((dataF1A.Raw >> i) & 0x1);
+        }
+    }
 
-	//
-	// Update button states. This mapping should be made registry configurable
-	//
-
-	hidKeys = &(HidReport->KeyReport);
-
-	if (ControllerContext->ButtonsCache.PendingState >> 7)
-	{
-		HidReport->ReportID = REPORTID_CAPKEY_CONSUMER;
-		hidKeys->bKeys = ControllerContext->ButtonsCache.PendingState & 0xF;
-		ControllerContext->ButtonsCache.PendingState = 0;
-		goto exit;
-	}
-
-	RMI4_F1A_DATA_REGISTERS prevDataF1A;
-	prevDataF1A.Raw = ControllerContext->ButtonsCache.prevPhysicalState;
-	ControllerContext->ButtonsCache.prevPhysicalState = dataF1A.Raw;
-
-	if (dataF1A.Button1 != prevDataF1A.Button1)
-	{
-		HidReport->ReportID = REPORTID_CAPKEY_KEYBOARD;
-		hidKeys->bKeys |= (dataF1A.Button1) ? (1 << 0) : 0;
-
-		if (dataF1A.Button0 != prevDataF1A.Button0 || dataF1A.Button2 != prevDataF1A.Button2)
-		{
-			ControllerContext->ButtonsCache.PendingState |= (dataF1A.Button0) ? (1 << 0) : 0;
-			ControllerContext->ButtonsCache.PendingState |= (dataF1A.Button2) ? (1 << 1) : 0;
-			ControllerContext->ButtonsCache.PendingState |= (1 << 7); //indicate waiting buttons
-			*PendingTouches = TRUE;
-		}
-
-		goto exit;
-	}
-
-	if (dataF1A.Button0 != prevDataF1A.Button0 || dataF1A.Button2 != prevDataF1A.Button2)
-	{
-		HidReport->ReportID = REPORTID_CAPKEY_CONSUMER;
-		if (ReversedKeys)
-		{
-			hidKeys->bKeys |= (dataF1A.Button0) ? (1 << 0) : 0;
-			hidKeys->bKeys |= (dataF1A.Button2) ? (1 << 1) : 0;
-		}
-		else
-		{
-			hidKeys->bKeys |= (dataF1A.Button2) ? (1 << 0) : 0;
-			hidKeys->bKeys |= (dataF1A.Button0) ? (1 << 1) : 0;
-		}
-	}
-
-	//
-	// On return of success, this request will be completed up the stack
-	//
+    status = FillButtonsReportFromCache(ControllerContext);
 
 exit:
-	return status;
+    return status;
+}
+
+NTSTATUS 
+FillButtonsReportFromCache(
+    IN RMI4_CONTROLLER_CONTEXT* ControllerContext
+)
+{
+    NTSTATUS status = STATUS_SUCCESS;
+
+    BOOLEAN* prevData = ControllerContext->ButtonsCache.prevPhysicalState;
+    BOOLEAN* data = ControllerContext->ButtonsCache.PhysicalState;
+    //
+    // Update button states. This mapping should be made registry configurable
+    //
+
+    //
+    PHID_INPUT_REPORT hidReport1=NULL;
+    PHID_INPUT_REPORT hidReport2 = NULL;
+    PHID_KEY_REPORT hidKeys = NULL;
+
+    if(!data[1] && prevData[1]) //when up key
+    {
+        //get two hidReports from Queue
+        GetNextHidReport(ControllerContext, &hidReport1);
+        status = GetNextHidReport(ControllerContext, &hidReport2);
+        if(!NT_SUCCESS(status))
+        {
+            Trace(
+                TRACE_LEVEL_ERROR,
+                TRACE_FLAG_HID,
+                "can't get next hed report in queue, status: %x",
+                status
+            );
+            goto exit;
+        }
+
+        hidReport1->ReportID = REPORTID_CAPKEY_KEYBOARD;
+        hidReport2->ReportID = REPORTID_CAPKEY_KEYBOARD;
+
+        hidKeys = &(hidReport1->KeyReport); //fill 1st report
+        hidKeys->bKeys |= (1 << 0);
+        hidKeys = &(hidReport2->KeyReport); //fill 2nd report
+        hidKeys->bKeys &= ~(1 << 0);
+
+    }
+
+    BOOLEAN b0 = !data[0] && prevData[0];
+    BOOLEAN b2 = !data[2] && prevData[2];
+
+    if(b0 || b2)
+    {
+        //get two hidReports from Queue
+        GetNextHidReport(ControllerContext, &hidReport1);
+        status = GetNextHidReport(ControllerContext, &hidReport2);
+        if(!NT_SUCCESS(status))
+        {
+            Trace(
+                TRACE_LEVEL_ERROR,
+                TRACE_FLAG_HID,
+                "can't get next hed report in queue, status: %x",
+                status
+            );
+            goto exit;
+        }
+
+        hidReport1->ReportID = REPORTID_CAPKEY_CONSUMER;
+        hidReport2->ReportID = REPORTID_CAPKEY_CONSUMER;
+
+        hidKeys = &(hidReport1->KeyReport);
+        hidKeys->bKeys |= (b0) ? (1 << 0) : 0;
+        hidKeys->bKeys |= (b2) ? (1 << 1) : 0;
+        hidKeys = &(hidReport2->KeyReport);
+        hidKeys->bKeys &= (b0) ? ~(1 << 0) : hidKeys->bKeys;
+        hidKeys->bKeys &= (b2) ? ~(1 << 1) : hidKeys->bKeys;
+    }
+
+    //
+    // On return of success, this request will be completed up the stack
+    //
+
+    for(int i = 0; i < RMI4_MAX_BUTTONS; i++)
+        ControllerContext->ButtonsCache.prevPhysicalState[i] = ControllerContext->ButtonsCache.PhysicalState[i];
+
+exit:
+    return status;
 }
 
 REPORTED_BUTTON

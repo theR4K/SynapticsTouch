@@ -50,12 +50,9 @@ RmiGetTouchesFromController(
 }
 
 VOID
-RmiFillNextHidReportFromCache(
-	IN PHID_INPUT_REPORT HidReport,
-	IN RMI4_FINGER_CACHE* Cache,
+RmiFillHidReportFromCache(
+    IN RMI4_CONTROLLER_CONTEXT* ControllerContext,
 	IN PTOUCH_SCREEN_PROPERTIES Props,
-	IN int* TouchesReported,
-	IN int* KeyTouchesReported,
 	IN int TouchesTotal
 )
 /*++
@@ -84,160 +81,161 @@ Return Value:
 
 --*/
 {
-	PHID_TOUCH_REPORT hidTouch = NULL;
-	hidTouch = &(HidReport->TouchReport);
+    NTSTATUS status;
+    RMI4_FINGER_CACHE* fingerCache = &(ControllerContext->FingerCache);
+    RMI4_BUTTONS_CACHE* buttonsCache = &(ControllerContext->ButtonsCache);
+
 	int currentFingerIndex;
 	int fingersToReport;
 	int i;
 	USHORT SctatchX = 0, ScratchY = 0;
 
-	fingersToReport = min(
-		TouchesTotal - *TouchesReported - *KeyTouchesReported,
-		SYNAPTICS_TOUCH_DIGITIZER_FINGER_REPORT_COUNT
-	);
+    int touchesReported = 0;
+    int keyTouchesReported = 0;
 
-	USHORT X1 = (USHORT)Cache->FingerSlot[Cache->FingerDownOrder[*TouchesReported]].x;
-	USHORT Y1 = (USHORT)Cache->FingerSlot[Cache->FingerDownOrder[*TouchesReported]].y;
+    //first report keys
+    for(i = 0; i < TouchesTotal; i++)
+    {
+        USHORT X1 = (USHORT)fingerCache->FingerSlot[fingerCache->FingerDownOrder[i]].x;
+        USHORT Y1 = (USHORT)fingerCache->FingerSlot[fingerCache->FingerDownOrder[i]].y;
 
-	ULONG ButtonIndex = TchHandleButtonArea(X1, Y1, Props);
+        ULONG ButtonIndex = TchHandleButtonArea(X1, Y1, Props);
 
-	if (ButtonIndex != BUTTON_NONE)
-	{
-		switch (ButtonIndex)
-		{
-		case BUTTON_BACK:
-		case BUTTON_SEARCH:
-		{
-			HidReport->ReportID = REPORTID_CAPKEY_CONSUMER;
-		}
-		case BUTTON_START:
-		{
-			HidReport->ReportID = REPORTID_CAPKEY_KEYBOARD;
-		}
-		}
+        if(ButtonIndex != BUTTON_NONE)
+        {
+            fingerCache->IsKey[i] = TRUE;
+            keyTouchesReported++;
+            buttonsCache->PhysicalState[ButtonIndex - 1] = fingerCache->FingerSlot[fingerCache->FingerDownOrder[i]].fingerStatus;
+        }
+    }
+    if(keyTouchesReported > 0)
+    {
+        status = FillButtonsReportFromCache(ControllerContext);
+        if(!NT_SUCCESS(status))
+        {
+            Trace(
+                TRACE_LEVEL_ERROR,
+                TRACE_FLAG_HID,
+                "error reporting touch buttons, status: %x",
+                status
+            );
+            goto exit;
+        }
+    }
 
-		if (!Cache->FingerSlot[Cache->FingerDownOrder[*TouchesReported]].fingerStatus)
-		{
-			HidReport->KeyReport.bKeys = 0;
-		}
-		else
-		{
-			switch (ButtonIndex)
-			{
-			case BUTTON_BACK:
-			{
-				HidReport->KeyReport.bKeys |= 1 << 1;
-			}
-			case BUTTON_START:
-			{
-				HidReport->KeyReport.bKeys |= 1 << 0;
-			}
-			case BUTTON_SEARCH:
-			{
-				HidReport->KeyReport.bKeys |= 1 << 0;
-			}
-			}
-		}
 
-		(*TouchesReported)++;
-		(*KeyTouchesReported)++;
-	}
-	else
-	{
-		HidReport->ReportID = REPORTID_MTOUCH;
 
-		//
-		// There are only 16-bits for ScanTime, truncate it
-		//
-		hidTouch->InputReport.ScanTime = Cache->ScanTime & 0xFFFF;
+    UCHAR touchesToReport = TouchesTotal - keyTouchesReported;
+    while(touchesToReport>0)
+    {
+        fingersToReport = min(
+            touchesToReport,
+            SYNAPTICS_TOUCH_DIGITIZER_FINGER_REPORT_COUNT
+        );
 
-		//
-		// Report the count
-		// We're sending touches using hybrid mode with 2 fingers in our
-		// report descriptor. The first report must indicate the
-		// total count of touch fingers detected by the digitizer.
-		// The remaining reports must indicate 0 for the count.
-		// The first report will have the TouchesReported integer set to 0
-		// The others will have it set to something else.
-		//
-		if (*TouchesReported - *KeyTouchesReported == 0)
-		{
-			hidTouch->InputReport.ActualCount = (UCHAR)(TouchesTotal - *KeyTouchesReported);
+        PHID_INPUT_REPORT hidReport = NULL;
+        status = GetNextHidReport(ControllerContext, &hidReport);
+        if(!NT_SUCCESS(status))
+        {
+            Trace(
+                TRACE_LEVEL_ERROR,
+                TRACE_FLAG_HID,
+                "can't get report queue slot [fillHidReport(touches)], status: %x",
+                status
+            );
+            goto exit;
+        }
+        hidReport->ReportID = REPORTID_MTOUCH;
 
-			//
-			// Only report touches that are not part of the button area
-			// We thus decrease the actual count value for each remaining touch
-			// that is not meant for the display panel
-			//
-			for (i = 0; i < TouchesTotal; i++)
-			{
-				USHORT XT = (USHORT)Cache->FingerSlot[Cache->FingerDownOrder[*TouchesReported]].x;
-				USHORT YT = (USHORT)Cache->FingerSlot[Cache->FingerDownOrder[*TouchesReported]].y;
+        PHID_TOUCH_REPORT hidTouch = &(hidReport->TouchReport);
+        //
+        // There are only 16-bits for ScanTime, truncate it
+        //
+        hidTouch->InputReport.ScanTime = fingerCache->ScanTime & 0xFFFF;
 
-				if (TchHandleButtonArea(XT, YT, Props) != BUTTON_NONE)
-				{
-					hidTouch->InputReport.ActualCount--;
-				}
-			}
-		}
-		else
-		{
-			hidTouch->InputReport.ActualCount = 0;
-		}
+        //
+        // Report the count
+        // We're sending touches using hybrid mode with 2 fingers in our
+        // report descriptor. The first report must indicate the
+        // total count of touch fingers detected by the digitizer.
+        // The remaining reports must indicate 0 for the count.
+        // The first report will have the TouchesReported integer set to 0
+        // The others will have it set to something else.
+        //
+        if(touchesReported == 0)
+        {
+            hidTouch->InputReport.ActualCount = touchesToReport;
+        }
+        else
+        {
+            hidTouch->InputReport.ActualCount = 0;
+        }
 
-		//
-		// Only two fingers supported yet
-		//
-		for (currentFingerIndex = 0; currentFingerIndex < fingersToReport; currentFingerIndex++)
-		{
-			int currentlyReporting = Cache->FingerDownOrder[*TouchesReported];
+        //
+        // Only two fingers supported yet
+        //
+        for(currentFingerIndex = 0; currentFingerIndex < fingersToReport; currentFingerIndex++)
+        {
+            //if this touch reported as key ignore it
+            if(fingerCache->IsKey[touchesReported])
+            {
+                touchesReported++;
+                currentFingerIndex--;
+                continue;
+            }
 
-			hidTouch->InputReport.Contacts[currentFingerIndex].ContactId = (UCHAR)currentlyReporting;
+            int currentlyReporting = fingerCache->FingerDownOrder[touchesReported];
 
-			SctatchX = (USHORT)Cache->FingerSlot[currentlyReporting].x;
-			ScratchY = (USHORT)Cache->FingerSlot[currentlyReporting].y;
+            hidTouch->InputReport.Contacts[currentFingerIndex].ContactId = (UCHAR)currentlyReporting;
 
-			//
-			// Perform per-platform x/y adjustments to controller coordinates
-			//
-			TchTranslateToDisplayCoordinates(
-				&SctatchX,
-				&ScratchY,
-				Props);
+            SctatchX = (USHORT)fingerCache->FingerSlot[currentlyReporting].x;
+            ScratchY = (USHORT)fingerCache->FingerSlot[currentlyReporting].y;
 
-			hidTouch->InputReport.Contacts[currentFingerIndex].wXData = SctatchX;
-			hidTouch->InputReport.Contacts[currentFingerIndex].wYData = ScratchY;
+            //
+            // Perform per-platform x/y adjustments to controller coordinates
+            //
+            TchTranslateToDisplayCoordinates(
+                &SctatchX,
+                &ScratchY,
+                Props);
 
-			if (Cache->FingerSlot[currentlyReporting].fingerStatus)
-			{
-				hidTouch->InputReport.Contacts[currentFingerIndex].bStatus = FINGER_STATUS;
-			}
+            hidTouch->InputReport.Contacts[currentFingerIndex].wXData = SctatchX;
+            hidTouch->InputReport.Contacts[currentFingerIndex].wYData = ScratchY;
 
-			(*TouchesReported)++;
+            if(fingerCache->FingerSlot[currentlyReporting].fingerStatus)
+            {
+                hidTouch->InputReport.Contacts[currentFingerIndex].bStatus = FINGER_STATUS;
+            }
+
+            touchesReported++;
+            touchesToReport--;
 
 #ifdef COORDS_DEBUG
-			Trace(
-				TRACE_LEVEL_NOISE,
-				TRACE_FLAG_REPORTING,
-				"ActualCount %d, ContactId %u X %u Y %u Tip %u",
-				hidTouch->InputReport.ActualCount,
-				hidTouch->InputReport.Contacts[currentFingerIndex].ContactId,
-				hidTouch->InputReport.Contacts[currentFingerIndex].wXData,
-				hidTouch->InputReport.Contacts[currentFingerIndex].wYData,
-				hidTouch->InputReport.Contacts[currentFingerIndex].bStatus
-			);
+            Trace(
+                TRACE_LEVEL_NOISE,
+                TRACE_FLAG_REPORTING,
+                "ActualCount %d, ContactId %u X %u Y %u Tip %u",
+                hidTouch->InputReport.ActualCount,
+                hidTouch->InputReport.Contacts[currentFingerIndex].ContactId,
+                hidTouch->InputReport.Contacts[currentFingerIndex].wXData,
+                hidTouch->InputReport.Contacts[currentFingerIndex].wYData,
+                hidTouch->InputReport.Contacts[currentFingerIndex].bStatus
+            );
 #endif
-		}
-	}
+        }
+
+        DbgPrintEx(DPFLTR_IHVDRIVER_ID, DPFLTR_ERROR_LEVEL, "hid report in %x is %x\n", hidReport, *hidReport);
+    }
+
+exit:
+    return;
 }
 
 NTSTATUS
 RmiServiceTouchDataInterrupt(
 	IN RMI4_CONTROLLER_CONTEXT* ControllerContext,
 	IN SPB_CONTEXT* SpbContext,
-	IN PHID_INPUT_REPORT HidReport,
-	IN UCHAR InputMode,
-	OUT BOOLEAN* PendingTouches
+	IN UCHAR InputMode
 )
 /*++
 
@@ -268,15 +266,13 @@ Return Value:
 	NTSTATUS status;
 
 	status = STATUS_SUCCESS;
-	NT_ASSERT(PendingTouches != NULL);
-	*PendingTouches = FALSE;
 
 	//
 	// If no touches are unreported in our cache, read the next set of touches
 	// from hardware.
 	//
-	if (ControllerContext->TouchesReported == ControllerContext->TouchesTotal)
-	{
+	//if (ControllerContext->TouchesReported == ControllerContext->TouchesTotal)
+	//{
 		RmiGetTouchesFromController(ControllerContext, SpbContext);
 
 		if (!NT_SUCCESS(status))
@@ -307,9 +303,7 @@ Return Value:
 			status = STATUS_NO_DATA_DETECTED;
 			goto exit;
 		}
-	}
-
-	RtlZeroMemory(HidReport, sizeof(HID_INPUT_REPORT));
+	//}
 
 	//
 	// Single-finger and HID-mouse input modes not implemented
@@ -328,29 +322,20 @@ Return Value:
 	//
 	// Fill report with the next (max of two) cached touches
 	//
-	RmiFillNextHidReportFromCache(
-		HidReport,
-		&ControllerContext->FingerCache,
-		&ControllerContext->Props,
-		&ControllerContext->TouchesReported,
-		&ControllerContext->KeyTouchesReported,
-		ControllerContext->TouchesTotal
-	);
+
+        RmiFillHidReportFromCache(
+            ControllerContext,
+            &ControllerContext->Props,
+            ControllerContext->TouchesTotal
+        );
 
 	//
 	// Update the caller if we still have outstanding touches to report
 	//
-	if (ControllerContext->TouchesReported < ControllerContext->TouchesTotal)
-	{
-		*PendingTouches = TRUE;
-	}
-	else
-	{
-		*PendingTouches = FALSE;
-	}
+	//if (ControllerContext->TouchesReported < ControllerContext->TouchesTotal)
 
 exit:
-
+        DbgPrintEx(DPFLTR_IHVDRIVER_ID, DPFLTR_ERROR_LEVEL, "content %x\n", ControllerContext->HidQueue[0]);
 	return status;
 }
 
@@ -358,9 +343,9 @@ NTSTATUS
 TchServiceInterrupts(
 	IN VOID* ControllerContext,
 	IN SPB_CONTEXT* SpbContext,
-	IN PHID_INPUT_REPORT HidReport,
 	IN UCHAR InputMode,
-	OUT BOOLEAN* ServicingComplete
+    IN PHID_INPUT_REPORT* HidReports,
+    IN int* HidReportsLength
 )
 /*++
 
@@ -392,8 +377,6 @@ Return Value:
 
 	controller = (RMI4_CONTROLLER_CONTEXT*)ControllerContext;
 
-	NT_ASSERT(ServicingComplete != NULL);
-
 	//
 	// Grab a waitlock to ensure the ISR executes serially and is 
 	// protected against power state transitions
@@ -418,7 +401,6 @@ Return Value:
 				"Error servicing interrupts - STATUS:%X",
 				status);
 
-			*ServicingComplete = FALSE;
 			goto exit;
 		}
 	}
@@ -453,14 +435,13 @@ Return Value:
 	//
 	status = STATUS_UNSUCCESSFUL;
 
+    BOOLEAN reversedKeys = FALSE;
 	//
 	// Service a capacitive button event if indicated by hardware
 	//
 	if (controller->InterruptStatus & RMI4_INTERRUPT_BIT_0D_CAP_BUTTON || 
 		controller->InterruptStatus & RMI4_INTERRUPT_BIT_0D_CAP_BUTTON_REVERSED)
 	{
-		BOOLEAN pendingTouches = FALSE;
-		BOOLEAN reversedKeys = FALSE;
 
 		if (controller->InterruptStatus & RMI4_INTERRUPT_BIT_0D_CAP_BUTTON_REVERSED)
 		{
@@ -470,28 +451,18 @@ Return Value:
 		status = RmiServiceCapacitiveButtonInterrupt(
 			ControllerContext,
 			SpbContext,
-			HidReport,
-			reversedKeys,
-			&pendingTouches);
+			reversedKeys);
 
 		//
-		// If there are more touches to report, servicing is incomplete
+		// mask cap buttons interupts after service
 		//
-		if (pendingTouches == FALSE)
-		{
-			controller->InterruptStatus &= ~RMI4_INTERRUPT_BIT_0D_CAP_BUTTON;
-			controller->InterruptStatus &= ~RMI4_INTERRUPT_BIT_0D_CAP_BUTTON_REVERSED;
-		}
+		controller->InterruptStatus &= ~RMI4_INTERRUPT_BIT_0D_CAP_BUTTON;
+		controller->InterruptStatus &= ~RMI4_INTERRUPT_BIT_0D_CAP_BUTTON_REVERSED;
 
+        //
+        //report if status unsuccess
 		//
-		// Success indicates the report is ready to be sent, otherwise,
-		// continue to service interrupts.
-		//
-		if (NT_SUCCESS(status))
-		{
-			goto exit;
-		}
-		else
+		if (!NT_SUCCESS(status))
 		{
 			Trace(
 				TRACE_LEVEL_ERROR,
@@ -506,32 +477,21 @@ Return Value:
 	//
 	if (controller->InterruptStatus & RMI4_INTERRUPT_BIT_2D_TOUCH)
 	{
-		BOOLEAN pendingTouches = FALSE;
 
 		status = RmiServiceTouchDataInterrupt(
 			ControllerContext,
 			SpbContext,
-			HidReport,
-			InputMode,
-			&pendingTouches);
+			InputMode);
 
 		//
-		// If there are more touches to report, servicing is incomplete
+		// clear interupt
 		//
-		if (pendingTouches == FALSE)
-		{
-			controller->InterruptStatus &= ~RMI4_INTERRUPT_BIT_2D_TOUCH;
-		}
+		controller->InterruptStatus &= ~RMI4_INTERRUPT_BIT_2D_TOUCH;
 
 		//
-		// Success indicates the report is ready to be sent, otherwise,
-		// continue to service interrupts.
+		// report error
 		//
-		if (NT_SUCCESS(status))
-		{
-			goto exit;
-		}
-		else
+		if (!NT_SUCCESS(status))
 		{
 			Trace(
 				TRACE_LEVEL_ERROR,
@@ -546,19 +506,11 @@ Return Value:
 	//
 
 exit:
-
-	//
-	// Indicate whether or not we're done servicing interrupts
-	//
-	if (controller->InterruptStatus == 0)
-	{
-		*ServicingComplete = TRUE;
-	}
-	else
-	{
-		*ServicingComplete = FALSE;
-	}
-
+    
+    *HidReports = controller->HidQueue;
+    (*HidReportsLength) = controller->HidQueueCount;
+    controller->HidQueueCount = 0;
+    DbgPrintEx(DPFLTR_IHVDRIVER_ID, DPFLTR_ERROR_LEVEL, "content after send %x\n", controller->HidQueue[0]);
 	//
 	// Turn on capacitive key backlights that may have timed out
 	// due to user inactivity
@@ -569,6 +521,29 @@ exit:
 	}
 
 	WdfWaitLockRelease(controller->ControllerLock);
+    DbgPrintEx(DPFLTR_IHVDRIVER_ID, DPFLTR_ERROR_LEVEL, "content after send and lock %x\n", controller->HidQueue[0]);
+
 
 	return status;
+}
+
+
+NTSTATUS
+GetNextHidReport(
+    IN RMI4_CONTROLLER_CONTEXT* ControllerContext,
+    IN PHID_INPUT_REPORT* HidReport
+)
+{
+    if(ControllerContext->HidQueueCount < MAX_REPORTS_IN_QUEUE)
+    {
+        *HidReport = &(ControllerContext->HidQueue[ControllerContext->HidQueueCount]);
+        ControllerContext->HidQueueCount++;
+        RtlZeroMemory(*HidReport, sizeof(HID_INPUT_REPORT));
+    }
+    else
+    {
+        return STATUS_NO_MEMORY;
+    }
+
+    return STATUS_SUCCESS;
 }

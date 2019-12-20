@@ -58,6 +58,8 @@
 #define REPORTID_FEATURE                7
 #define REPORTID_MAX_COUNT              8
 
+#define  MAX_REPORTS_IN_QUEUE            10  //5 for 10 touches + 2 for keyboard + 2 for consumer + 1 reserved
+
 // 
 // Type defintions
 //
@@ -181,8 +183,8 @@ NTSTATUS
 TchServiceInterrupts(
 	IN VOID* ControllerContext,
 	IN SPB_CONTEXT* SpbContext,
-	IN PHID_INPUT_REPORT HidReport,
 	IN UCHAR InputMode,
-	OUT BOOLEAN* ServicingComplete
+    IN PHID_INPUT_REPORT* HidReports,
+    IN int* HidReportsLength
 );
 

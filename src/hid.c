@@ -258,18 +258,15 @@ Return Value:
 	//
 	if (devContext->ServiceInterruptsAfterD0Entry == TRUE)
 	{
-		HID_INPUT_REPORT hidReport;
-		BOOLEAN servicingComplete = FALSE;
+		HID_INPUT_REPORT* hidReports = NULL;
+        int reportsCount;
 
-		while (servicingComplete == FALSE)
-		{
 			TchServiceInterrupts(
 				devContext->TouchContext,
 				&devContext->I2CContext,
-				&hidReport,
 				devContext->InputMode,
-				&servicingComplete);
-		}
+                &hidReports,
+				&reportsCount);
 
 		devContext->ServiceInterruptsAfterD0Entry = FALSE;
 	}

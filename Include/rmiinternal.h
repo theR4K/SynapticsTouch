@@ -46,6 +46,8 @@
 
 #define RMI4_MAX_FUNCTIONS                10
 
+#define RMI4_MAX_BUTTONS                  3
+
 #define LOGICAL_TO_PHYSICAL(LOGICAL_VALUE) ((LOGICAL_VALUE) & 0xff)
 
 typedef struct _RMI4_FUNCTION_DESCRIPTOR
@@ -103,7 +105,14 @@ typedef struct _RMI4_FINGER_CACHE
 	int FingerDownOrder[RMI4_MAX_TOUCHES];
 	int FingerDownCount;
 	ULONG64 ScanTime;
+    BOOLEAN IsKey[RMI4_MAX_TOUCHES];
 } RMI4_FINGER_CACHE;
+
+typedef struct _RMI4_BUTTONS_CACHE
+{
+    BOOLEAN prevPhysicalState[RMI4_MAX_BUTTONS];
+    BOOLEAN PhysicalState[RMI4_MAX_BUTTONS];
+} RMI4_BUTTONS_CACHE;
 
 typedef struct _RMI4_CONTROLLER_CONTEXT
 {
@@ -182,8 +191,10 @@ typedef struct _RMI4_CONTROLLER_CONTEXT
 	//
 	// Current button state
 	//
-	RMI4_F1A_CACHE ButtonsCache;
+	RMI4_BUTTONS_CACHE ButtonsCache;
 
+    HID_INPUT_REPORT HidQueue[MAX_REPORTS_IN_QUEUE];
+    int HidQueueCount;
 } RMI4_CONTROLLER_CONTEXT;
 
 NTSTATUS
@@ -216,4 +227,11 @@ RmiGetTouchesFromController(
 UINT8 RmiGetRegisterIndex(
 	PRMI_REGISTER_DESCRIPTOR Rdesc,
 	USHORT reg
+);
+
+
+NTSTATUS
+GetNextHidReport(
+    IN RMI4_CONTROLLER_CONTEXT* ControllerContext,
+    IN PHID_INPUT_REPORT* HidReport
 );

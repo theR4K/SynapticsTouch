@@ -62,7 +62,7 @@ OnInterruptIsr(
 	NTSTATUS status;
 	WDFREQUEST request;
 	BOOLEAN servicingComplete;
-	HID_INPUT_REPORT hidReportFromDriver;
+	PHID_INPUT_REPORT hidReportsFromDriver = NULL;
 	PHID_INPUT_REPORT hidReportRequestBuffer;
 	size_t hidReportRequestBufferLength;
 
@@ -85,26 +85,33 @@ OnInterruptIsr(
 	//
 	// Service the device interrupt
 	//
-	while (servicingComplete == FALSE)
-	{
+
 		//
 		// Service touch interrupts. Success indicates we have a report
 		// to complete to Hid. ServicingComplete indicates another report
 		// is required to continue servicing this interrupt.
 		//
-		if (!NT_SUCCESS(TchServiceInterrupts(
-			devContext->TouchContext,
-			&devContext->I2CContext,
-			&hidReportFromDriver,
-			devContext->InputMode,
-			&servicingComplete)))
-		{
-			//
-			// hidReportFromDriver was not filled
-			//
-			continue;
-		}
+    int reportsLen = 0;
+    status = TchServiceInterrupts(
+        devContext->TouchContext,
+        &devContext->I2CContext,
+        devContext->InputMode,
+        &hidReportsFromDriver,
+        &reportsLen
+    );
 
+	if (!NT_SUCCESS(status))
+	{
+		//
+		// hidReportFromDriver was not filled
+		//
+        goto exit;
+	}
+
+    DbgPrintEx(DPFLTR_IHVDRIVER_ID, DPFLTR_ERROR_LEVEL, "reported %u reports in %x address\n", reportsLen, hidReportsFromDriver);
+
+    for(int i = 0; i < reportsLen; i++)
+    {
 		//
 		// Complete a HIDClass request if one is available
 		//
@@ -160,9 +167,9 @@ OnInterruptIsr(
 			{
 				RtlCopyMemory(
 					hidReportRequestBuffer,
-					&hidReportFromDriver,
+					&hidReportsFromDriver[i],
 					sizeof(HID_INPUT_REPORT));
-
+                DbgPrintEx(DPFLTR_IHVDRIVER_ID, DPFLTR_ERROR_LEVEL, "copy from %x(%x) to %x, content of hid %x\n", &hidReportsFromDriver[i], hidReportsFromDriver+sizeof(HID_INPUT_REPORT)*i, hidReportRequestBuffer,*hidReportsFromDriver);
 				WdfRequestSetInformation(request, sizeof(HID_INPUT_REPORT));
 			}
 		}
