@@ -144,8 +144,8 @@ FillButtonsReportFromCache(
     //
 
     //
-    PHID_INPUT_REPORT hidReport1;
-    PHID_INPUT_REPORT hidReport2;
+    PHID_INPUT_REPORT hidReport1 = NULL;
+    PHID_INPUT_REPORT hidReport2 = NULL;
     PHID_KEY_REPORT hidKeys;
 
     if(!data[1] && prevData[1]) //when up key

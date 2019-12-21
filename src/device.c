@@ -140,7 +140,7 @@ OnInterruptIsr(
 		if (!NT_SUCCESS(status))
 		{
 			Trace(
-				TRACE_LEVEL_VERBOSE,
+				TRACE_LEVEL_WARNING,
 				TRACE_FLAG_SAMPLES,
 				"Error retrieving HID read request output buffer - STATUS:%X",
 				status);
@@ -155,7 +155,7 @@ OnInterruptIsr(
 				status = STATUS_BUFFER_TOO_SMALL;
 
 				Trace(
-					TRACE_LEVEL_VERBOSE,
+					TRACE_LEVEL_WARNING,
 					TRACE_FLAG_SAMPLES,
 					"Error HID read request buffer is too small (%lu bytes) - STATUS:%X",
 					hidReportRequestBufferLength,

@@ -427,7 +427,7 @@ RmiBuildFunctionsTable(
 		else
 		{
 			Trace(
-				TRACE_LEVEL_VERBOSE,
+				TRACE_LEVEL_WARNING,
 				TRACE_FLAG_INIT,
 				"Discovered function $%x",
 				ControllerContext->Descriptors[function].Number);

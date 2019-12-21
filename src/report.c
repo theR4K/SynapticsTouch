@@ -308,7 +308,7 @@ Return Value:
 	if (MODE_MULTI_TOUCH != InputMode)
 	{
 		Trace(
-			TRACE_LEVEL_VERBOSE,
+			TRACE_LEVEL_WARNING,
 			TRACE_FLAG_SAMPLES,
 			"Unable to report touches, only multitouch mode is supported");
 

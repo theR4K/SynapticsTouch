@@ -6,22 +6,28 @@
 //#define COORDS_DEBUG
 //#define ALS_BACKLIGHT_DEBUG
 
-#define TRACE_FLAG_INIT        1  
-#define TRACE_FLAG_REGISTRY    2  
-#define TRACE_FLAG_HID         3  
-#define TRACE_FLAG_PNP         4  
-#define TRACE_FLAG_POWER       5  
-#define TRACE_FLAG_SPB         6  
-#define TRACE_FLAG_CONFIG      7  
-#define TRACE_FLAG_REPORTING   8  
-#define TRACE_FLAG_INTERRUPT   9  
-#define TRACE_FLAG_SAMPLES     10  
-#define TRACE_FLAG_OTHER       11  
-#define TRACE_FLAG_IDLE		   12
+typedef enum _TraceFlags
+{
+    TRACE_FLAG_INIT = 1,
+    TRACE_FLAG_REGISTRY,
+    TRACE_FLAG_HID,
+    TRACE_FLAG_PNP,
+    TRACE_FLAG_POWER,
+    TRACE_FLAG_SPB,
+    TRACE_FLAG_CONFIG,
+    TRACE_FLAG_REPORTING,
+    TRACE_FLAG_INTERRUPT,
+    TRACE_FLAG_SAMPLES,
+    TRACE_FLAG_OTHER,
+    TRACE_FLAG_IDLE
+} TraceFlag;
 
-#define TRACE_LEVEL_ERROR       1
-#define TRACE_LEVEL_VERBOSE     2
-#define TRACE_LEVEL_INFORMATION 4
-#define TRACE_LEVEL_WARNING     3
+typedef enum _TraceLevels
+{
+    TRACE_LEVEL_ERROR = 1,
+    TRACE_LEVEL_VERBOSE,
+    TRACE_LEVEL_INFORMATION,
+    TRACE_LEVEL_WARNING
+} TraceLevel;
 
 

@@ -31,7 +31,7 @@ GetTouchesFromF12(
 	{
 		Trace(
 			TRACE_LEVEL_ERROR,
-			TRACE_INIT,
+			TRACE_FLAG_INIT,
 			"Unexpected - RMI Function 12 missing");
 
 		status = STATUS_INVALID_DEVICE_STATE;
@@ -47,7 +47,7 @@ GetTouchesFromF12(
 	{
 		Trace(
 			TRACE_LEVEL_ERROR,
-			TRACE_INIT,
+			TRACE_FLAG_INIT,
 			"Could not change register page");
 
 		goto exit;
@@ -314,7 +314,7 @@ RmiSetReportingMode(
 	{
 		Trace(
 			TRACE_LEVEL_ERROR,
-			TRACE_INIT,
+			TRACE_FLAG_INIT,
 			"Set ReportingMode failure - RMI Function 12 missing");
 
 		status = STATUS_INVALID_DEVICE_STATE;
@@ -330,7 +330,7 @@ RmiSetReportingMode(
 	{
 		Trace(
 			TRACE_LEVEL_ERROR,
-			TRACE_INIT,
+			TRACE_FLAG_INIT,
 			"Could not change register page");
 
 		goto exit;
@@ -342,7 +342,7 @@ RmiSetReportingMode(
 	{
 		Trace(
 			TRACE_LEVEL_ERROR,
-			TRACE_INIT,
+			TRACE_FLAG_INIT,
 			"Cannot find F12_2D_Ctrl20 offset");
 
 		status = STATUS_INVALID_DEVICE_STATE;
@@ -353,7 +353,7 @@ RmiSetReportingMode(
 	{
 		Trace(
 			TRACE_LEVEL_ERROR,
-			TRACE_INIT,
+			TRACE_FLAG_INIT,
 			"Unexpected F12_2D_Ctrl20 register size, size=%lu, expected=%lu",
 			ControllerContext->ControlRegDesc.Registers[indexCtrl20].RegisterSize,
 			sizeof(reportingControl)
@@ -377,7 +377,7 @@ RmiSetReportingMode(
 	{
 		Trace(
 			TRACE_LEVEL_ERROR,
-			TRACE_INIT,
+			TRACE_FLAG_INIT,
 			"Could not read F12_2D_Ctrl20 register - Status=%X",
 			status);
 
@@ -409,7 +409,7 @@ RmiSetReportingMode(
 	{
 		Trace(
 			TRACE_LEVEL_ERROR,
-			TRACE_INIT,
+			TRACE_FLAG_INIT,
 			"Could not write F12_2D_Ctrl20 register - %X",
 			status);
 
@@ -447,7 +447,7 @@ RmiConfigureFunction12(
 	{
 		Trace(
 			TRACE_LEVEL_ERROR,
-			TRACE_INIT,
+			TRACE_FLAG_INIT,
 			"Unexpected - RMI Function 12 missing");
 
 		status = STATUS_INVALID_DEVICE_STATE;
@@ -463,7 +463,7 @@ RmiConfigureFunction12(
 	{
 		Trace(
 			TRACE_LEVEL_ERROR,
-			TRACE_INIT,
+			TRACE_FLAG_INIT,
 			"Could not change register page");
 
 		goto exit;
@@ -482,7 +482,7 @@ RmiConfigureFunction12(
 	{
 		Trace(
 			TRACE_LEVEL_ERROR,
-			TRACE_INIT,
+			TRACE_FLAG_INIT,
 			"Failed to read general info register - Status=%X",
 			status);
 		goto exit;
@@ -494,7 +494,7 @@ RmiConfigureFunction12(
 	{
 		Trace(
 			TRACE_LEVEL_ERROR,
-			TRACE_INIT,
+			TRACE_FLAG_INIT,
 			"Behavior of F12 without register descriptors is undefined."
 		);
 
@@ -515,7 +515,7 @@ RmiConfigureFunction12(
 
 		Trace(
 			TRACE_LEVEL_ERROR,
-			TRACE_INIT,
+			TRACE_FLAG_INIT,
 			"Failed to read the Query Register Descriptor - Status=%X",
 			status);
 		goto exit;
@@ -533,7 +533,7 @@ RmiConfigureFunction12(
 
 		Trace(
 			TRACE_LEVEL_ERROR,
-			TRACE_INIT,
+			TRACE_FLAG_INIT,
 			"Failed to read the Control Register Descriptor - Status=%X",
 			status);
 		goto exit;
@@ -551,7 +551,7 @@ RmiConfigureFunction12(
 
 		Trace(
 			TRACE_LEVEL_ERROR,
-			TRACE_INIT,
+			TRACE_FLAG_INIT,
 			"Failed to read the Data Register Descriptor - Status=%X",
 			status);
 		goto exit;
@@ -647,7 +647,7 @@ RmiReadRegisterDescriptor(
 	{
 		Trace(
 			TRACE_LEVEL_ERROR,
-			TRACE_INIT,
+			TRACE_FLAG_INIT,
 			"size_presence_reg has invalid size, either less than 0 or larger than 35");
 		Status = STATUS_INVALID_PARAMETER;
 		goto exit;
@@ -780,7 +780,7 @@ RmiReadRegisterDescriptor(
 
 		Trace(
 			TRACE_LEVEL_INFORMATION,
-			TRACE_INIT,
+			TRACE_FLAG_INIT,
 			"%s: reg: %d reg size: %ld subpackets: %d num reg: %d",
 			__func__,
 			item->Register, item->RegisterSize, item->NumSubPackets, Rdesc->NumRegisters
@@ -801,7 +801,7 @@ exit:
 i2c_read_fail:
 	Trace(
 		TRACE_LEVEL_ERROR,
-		TRACE_INIT,
+		TRACE_FLAG_INIT,
 		"Failed to read general info register - Status=%X",
 		Status);
 	goto exit;
