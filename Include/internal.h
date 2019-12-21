@@ -71,3 +71,10 @@ typedef struct _DEVICE_EXTENSION
 } DEVICE_EXTENSION, * PDEVICE_EXTENSION;
 
 WDF_DECLARE_CONTEXT_TYPE_WITH_NAME(DEVICE_EXTENSION, GetDeviceContext)
+
+void
+SendHidReports(
+    WDFQUEUE PingPongQueue,
+    PHID_INPUT_REPORT hidReportsFromDriver,
+    int hidReportsCount
+);

@@ -20,6 +20,7 @@
 
 #include "debug.h"
 #include "buttonreporting.h"
+#include "internal.h"
 
 NTSTATUS
 RmiServiceCapacitiveButtonInterrupt(
@@ -139,6 +140,7 @@ FillButtonsReportFromCache(
 
     BOOLEAN* prevData = ControllerContext->ButtonsCache.prevPhysicalState;
     BOOLEAN* data = ControllerContext->ButtonsCache.PhysicalState;
+    BOOLEAN* Logical = ControllerContext->ButtonsCache.LogicalState;
     //
     // Update button states. This mapping should be made registry configurable
     //
@@ -148,7 +150,16 @@ FillButtonsReportFromCache(
     PHID_INPUT_REPORT hidReport2 = NULL;
     PHID_KEY_REPORT hidKeys;
 
-    if(!data[1] && prevData[1]) //when up key
+    for(int i = 0; i < RMI4_MAX_BUTTONS; i++)
+    {
+        if(data[i] && !prevData[i])
+        {
+            Logical[i] = TRUE;
+            WdfTimerStart(ControllerContext->ButtonsTimer, WDF_REL_TIMEOUT_IN_MS(1500));
+        }
+    }
+
+    if(!data[1] && prevData[1] && Logical[1]) //when up key
     {
         //get two hidReports from Queue
         GetNextHidReport(ControllerContext, &hidReport1);
@@ -172,10 +183,11 @@ FillButtonsReportFromCache(
         hidKeys = &(hidReport2->KeyReport); //fill 2nd report
         hidKeys->bKeys &= ~(1 << 0);
 
+        Logical[1] = FALSE;
     }
 
-    BOOLEAN b0 = !data[0] && prevData[0];
-    BOOLEAN b2 = !data[2] && prevData[2];
+    BOOLEAN b0 = !data[0] && prevData[0] && Logical[0];
+    BOOLEAN b2 = !data[2] && prevData[2] && Logical[2];
 
     if(b0 || b2)
     {
@@ -202,6 +214,9 @@ FillButtonsReportFromCache(
         hidKeys = &(hidReport2->KeyReport);
         hidKeys->bKeys &= (b0) ? ~(1 << 0) : hidKeys->bKeys;
         hidKeys->bKeys &= (b2) ? ~(1 << 1) : hidKeys->bKeys;
+
+        Logical[0] = FALSE;
+        Logical[2] = FALSE;
     }
 
     //
@@ -298,4 +313,67 @@ TchHandleButtonArea(
 	UNREFERENCED_PARAMETER((ControllerX, ControllerY, Props));
 #endif
 	return BUTTON_NONE;
+}
+
+void 
+ButtonsTimerHandler(
+    WDFTIMER Timer
+)
+{
+    WDFDEVICE FxDevice = (WDFDEVICE)WdfTimerGetParentObject(Timer);
+    PDEVICE_EXTENSION devContext = GetDeviceContext(FxDevice);
+    RMI4_CONTROLLER_CONTEXT* controller = (RMI4_CONTROLLER_CONTEXT*)devContext->TouchContext;
+
+    BOOLEAN* Logical = controller->ButtonsCache.LogicalState;
+
+    PHID_INPUT_REPORT hidReport1 = NULL;
+    PHID_INPUT_REPORT hidReport2 = NULL;
+    PHID_KEY_REPORT hidKeys;
+    BOOLEAN flag = FALSE;
+
+    if(Logical[0])
+    {
+        //get two hidReports from Queue
+        GetNextHidReport(controller, &hidReport1);
+        GetNextHidReport(controller, &hidReport2);
+
+        hidReport1->ReportID = REPORTID_CAPKEY_KEYBOARD;
+        hidReport2->ReportID = REPORTID_CAPKEY_KEYBOARD;
+
+        hidKeys = &(hidReport1->KeyReport);
+        hidKeys->bKeys |= (1 << 0);
+        hidKeys->bKeys |= (1 << 1);
+        hidKeys = &(hidReport2->KeyReport);
+        hidKeys->bKeys &= ~(1 << 0);
+        hidKeys->bKeys &= ~(1 << 1);
+
+        Logical[0] = FALSE;
+        flag = TRUE;
+    }
+
+    if(flag)
+    {
+        SendHidReports(
+            devContext->PingPongQueue,
+            controller->HidQueue,
+            controller->HidQueueCount
+        );
+        controller->HidQueueCount = 0;
+    }
+
+    Trace(TRACE_LEVEL_INFORMATION, TRACE_FLAG_HID, "Buttons Timer reached!");
+}
+
+void
+ButtonsInitTimer(
+    RMI4_CONTROLLER_CONTEXT* ControllerContext
+)
+{
+    WDF_TIMER_CONFIG       timerConfig;
+    WDF_OBJECT_ATTRIBUTES  timerAttributes;
+    WDF_TIMER_CONFIG_INIT(&timerConfig, ButtonsTimerHandler);
+    WDF_OBJECT_ATTRIBUTES_INIT(&timerAttributes);
+    timerAttributes.ParentObject = ControllerContext->FxDevice;
+
+    WdfTimerCreate(&timerConfig, &timerAttributes, &ControllerContext->ButtonsTimer);
 }

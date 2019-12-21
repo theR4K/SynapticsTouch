@@ -99,13 +99,14 @@
 			REPORT_ID, REPORTID_CAPKEY_KEYBOARD,    /*    REPORT_ID */ \
 			USAGE_PAGE, 0x07,                       /*    USAGE_PAGE (Keyboard) */ \
 			USAGE, 0xe3,                            /*    USAGE (Keyboard Left GUI) - Start/Home */ \
+            USAGE, 0x2b,                            /*    USAGE (TAB)                                   */ \
 			LOGICAL_MINIMUM, 0x00,                  /*    LOGICAL_MINIMUM (0) */ \
 			LOGICAL_MAXIMUM, 0x01,                  /*    LOGICAL_MAXIMUM (1) */ \
 			REPORT_SIZE, 0x01,                      /*    REPORT_SIZE (1) */ \
-			REPORT_COUNT, 0x01,                     /*    REPORT_COUNT (1) */ \
+			REPORT_COUNT, 0x02,                     /*    REPORT_COUNT (1) */ \
 			INPUT, 0x02,                            /*    INPUT (Data,Var,Abs) */ \
 			REPORT_COUNT, 0x01,                     /*    REPORT_COUNT (1) */ \
-			REPORT_SIZE, 0x07,                      /*    REPORT_SIZE (7) */ \
+			REPORT_SIZE, 0x06,                      /*    REPORT_SIZE (7) */ \
 			INPUT, 0x03,                            /*    INPUT (Cnst,Var,Abs) */ \
 			END_COLLECTION,                         /*  END_COLLECTION */ \
 			\

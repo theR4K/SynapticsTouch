@@ -60,19 +60,15 @@ OnInterruptIsr(
 {
 	PDEVICE_EXTENSION devContext;
 	NTSTATUS status;
-	WDFREQUEST request;
 	BOOLEAN servicingComplete;
 	PHID_INPUT_REPORT hidReportsFromDriver;
     int hidReportsCount = 0;
-	PHID_INPUT_REPORT hidReportRequestBuffer;
-	size_t hidReportRequestBufferLength;
 
 	UNREFERENCED_PARAMETER(MessageID);
 
 	status = STATUS_SUCCESS;
 	servicingComplete = FALSE;
 	devContext = GetDeviceContext(WdfInterruptGetDevice(Interrupt));
-	request = NULL;
 
 	//
 	// If we're in diagnostic mode, let the diagnostic application handle
@@ -108,75 +104,94 @@ OnInterruptIsr(
         goto exit;
 	}
 
+    SendHidReports(
+        devContext->PingPongQueue,
+        hidReportsFromDriver,
+        hidReportsCount
+    );
+
+exit:
+	return TRUE;
+}
+
+void
+SendHidReports(
+    WDFQUEUE PingPongQueue,
+    PHID_INPUT_REPORT hidReportsFromDriver,
+    int hidReportsCount
+)
+{
+    NTSTATUS status;
+    WDFREQUEST request = NULL;
+    PHID_INPUT_REPORT hidReportRequestBuffer;
+    size_t hidReportRequestBufferLength;
+
     for(int i = 0; i < hidReportsCount; i++)
     {
-		//
-		// Complete a HIDClass request if one is available
-		//
-		status = WdfIoQueueRetrieveNextRequest(
-			devContext->PingPongQueue,
-			&request);
+        //
+        // Complete a HIDClass request if one is available
+        //
+        status = WdfIoQueueRetrieveNextRequest(
+            PingPongQueue,
+            &request);
 
-		if (!NT_SUCCESS(status))
-		{
-			Trace(
-				TRACE_LEVEL_ERROR,
-				TRACE_FLAG_REPORTING,
-				"No request pending from HIDClass, ignoring report - STATUS:%X",
-				status);
+        if(!NT_SUCCESS(status))
+        {
+            Trace(
+                TRACE_LEVEL_ERROR,
+                TRACE_FLAG_REPORTING,
+                "No request pending from HIDClass, ignoring report - STATUS:%X",
+                status);
 
-			continue;
-		}
+            continue;
+        }
 
-		//
-		// Validate an output buffer was provided
-		//
-		status = WdfRequestRetrieveOutputBuffer(
-			request,
-			sizeof(HID_INPUT_REPORT),
-			&hidReportRequestBuffer,
-			&hidReportRequestBufferLength);
+        //
+        // Validate an output buffer was provided
+        //
+        status = WdfRequestRetrieveOutputBuffer(
+            request,
+            sizeof(HID_INPUT_REPORT),
+            &hidReportRequestBuffer,
+            &hidReportRequestBufferLength);
 
-		if (!NT_SUCCESS(status))
-		{
-			Trace(
-				TRACE_LEVEL_WARNING,
-				TRACE_FLAG_SAMPLES,
-				"Error retrieving HID read request output buffer - STATUS:%X",
-				status);
-		}
-		else
-		{
-			//
-			// Validate the size of the output buffer
-			//
-			if (hidReportRequestBufferLength < sizeof(HID_INPUT_REPORT))
-			{
-				status = STATUS_BUFFER_TOO_SMALL;
+        if(!NT_SUCCESS(status))
+        {
+            Trace(
+                TRACE_LEVEL_WARNING,
+                TRACE_FLAG_SAMPLES,
+                "Error retrieving HID read request output buffer - STATUS:%X",
+                status);
+        }
+        else
+        {
+            //
+            // Validate the size of the output buffer
+            //
+            if(hidReportRequestBufferLength < sizeof(HID_INPUT_REPORT))
+            {
+                status = STATUS_BUFFER_TOO_SMALL;
 
-				Trace(
-					TRACE_LEVEL_WARNING,
-					TRACE_FLAG_SAMPLES,
-					"Error HID read request buffer is too small (%lu bytes) - STATUS:%X",
-					hidReportRequestBufferLength,
-					status);
-			}
-			else
-			{
+                Trace(
+                    TRACE_LEVEL_WARNING,
+                    TRACE_FLAG_SAMPLES,
+                    "Error HID read request buffer is too small (%lu bytes) - STATUS:%X",
+                    hidReportRequestBufferLength,
+                    status);
+            }
+            else
+            {
                 RtlCopyMemory(
                     hidReportRequestBuffer,
                     &hidReportsFromDriver[i],
                     sizeof(HID_INPUT_REPORT));
 
-				WdfRequestSetInformation(request, sizeof(HID_INPUT_REPORT));
-			}
-		}
+                WdfRequestSetInformation(request, sizeof(HID_INPUT_REPORT));
+            }
+        }
 
-		WdfRequestComplete(request, status);
-	}
-
-exit:
-	return TRUE;
+        WdfRequestComplete(request, status);
+    }
 }
 
 NTSTATUS

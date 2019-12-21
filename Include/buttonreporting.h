@@ -29,3 +29,13 @@ NTSTATUS
 FillButtonsReportFromCache(
     IN RMI4_CONTROLLER_CONTEXT* ControllerContext
 );
+
+void
+ButtonsTimerHandler(
+    WDFTIMER Timer
+);
+
+void
+ButtonsInitTimer(
+    RMI4_CONTROLLER_CONTEXT* ControllerContext
+);

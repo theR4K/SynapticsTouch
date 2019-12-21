@@ -112,6 +112,7 @@ typedef struct _RMI4_BUTTONS_CACHE
 {
     BOOLEAN prevPhysicalState[RMI4_MAX_BUTTONS];
     BOOLEAN PhysicalState[RMI4_MAX_BUTTONS];
+    BOOLEAN LogicalState[RMI4_MAX_BUTTONS];
 } RMI4_BUTTONS_CACHE;
 
 typedef struct _RMI4_CONTROLLER_CONTEXT
@@ -189,6 +190,7 @@ typedef struct _RMI4_CONTROLLER_CONTEXT
 	// Current button state
 	//
 	RMI4_BUTTONS_CACHE ButtonsCache;
+    WDFTIMER ButtonsTimer;
 
     HID_INPUT_REPORT HidQueue[MAX_REPORTS_IN_QUEUE];
     int HidQueueCount;

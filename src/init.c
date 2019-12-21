@@ -25,6 +25,7 @@
 #include "Function1A.h"
 #include "Function11.h"
 #include "Function12.h"
+#include "buttonreporting.h"
 //#include "init.tmh"
 
 #pragma warning(push)
@@ -317,6 +318,9 @@ RmiConfigureFunctions(
 
 	if (f01Flag)
 		status = RmiConfigureFunction01(ControllerContext, SpbContext);
+
+    //temporaly init buttons timer TODO if(f1aflag || touchButtons)
+    ButtonsInitTimer(ControllerContext);
 exit:
 
 	return status;
