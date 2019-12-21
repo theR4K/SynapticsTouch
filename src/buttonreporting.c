@@ -146,8 +146,7 @@ FillButtonsReportFromCache(
     //
 
     //
-    PHID_INPUT_REPORT hidReport1 = NULL;
-    PHID_INPUT_REPORT hidReport2 = NULL;
+    PHID_INPUT_REPORT hidReport = NULL;
     PHID_KEY_REPORT hidKeys;
 
     for(int i = 0; i < RMI4_MAX_BUTTONS; i++)
@@ -159,29 +158,19 @@ FillButtonsReportFromCache(
         }
     }
 
-    if(!data[1] && prevData[1] && Logical[1]) //when up key
+    if(!data[1] && prevData[1]) //when up key
     {
-        //get two hidReports from Queue
-        GetNextHidReport(ControllerContext, &hidReport1);
-        status = GetNextHidReport(ControllerContext, &hidReport2);
-        if(!NT_SUCCESS(status))
+        if(Logical[1]) //send key Down if Logical is true
         {
-            Trace(
-                TRACE_LEVEL_ERROR,
-                TRACE_FLAG_HID,
-                "can't get next hed report in queue, status: %x",
-                status
-            );
-            goto exit;
+            //get hidReports from Queue
+            GetNextHidReport(ControllerContext, &hidReport);
+            hidReport->ReportID = REPORTID_CAPKEY_KEYBOARD;
+            hidKeys = &(hidReport->KeyReport);
+            hidKeys->bKeys |= (1 << 0);
         }
 
-        hidReport1->ReportID = REPORTID_CAPKEY_KEYBOARD;
-        hidReport2->ReportID = REPORTID_CAPKEY_KEYBOARD;
-
-        hidKeys = &(hidReport1->KeyReport); //fill 1st report
-        hidKeys->bKeys |= (1 << 0);
-        hidKeys = &(hidReport2->KeyReport); //fill 2nd report
-        hidKeys->bKeys &= ~(1 << 0);
+        GetNextHidReport(ControllerContext, &hidReport);
+        hidReport->ReportID = REPORTID_CAPKEY_KEYBOARD; //send empty report(up all keys)
 
         Logical[1] = FALSE;
     }
@@ -192,31 +181,24 @@ FillButtonsReportFromCache(
     if(b0 || b2)
     {
         //get two hidReports from Queue
-        GetNextHidReport(ControllerContext, &hidReport1);
-        status = GetNextHidReport(ControllerContext, &hidReport2);
-        if(!NT_SUCCESS(status))
-        {
-            Trace(
-                TRACE_LEVEL_ERROR,
-                TRACE_FLAG_HID,
-                "can't get next hed report in queue, status: %x",
-                status
-            );
-            goto exit;
-        }
-
-        hidReport1->ReportID = REPORTID_CAPKEY_CONSUMER;
-        hidReport2->ReportID = REPORTID_CAPKEY_CONSUMER;
-
-        hidKeys = &(hidReport1->KeyReport);
+        GetNextHidReport(ControllerContext, &hidReport);
+        hidReport->ReportID = REPORTID_CAPKEY_CONSUMER;
+        hidKeys = &(hidReport->KeyReport);
         hidKeys->bKeys |= (b0) ? (1 << 0) : 0;
         hidKeys->bKeys |= (b2) ? (1 << 1) : 0;
-        hidKeys = &(hidReport2->KeyReport);
-        hidKeys->bKeys &= (b0) ? ~(1 << 0) : hidKeys->bKeys;
-        hidKeys->bKeys &= (b2) ? ~(1 << 1) : hidKeys->bKeys;
+        
+        GetNextHidReport(ControllerContext, &hidReport);
+        hidReport->ReportID = REPORTID_CAPKEY_CONSUMER;
 
         Logical[0] = FALSE;
         Logical[2] = FALSE;
+    }
+
+    //up ALT for alt+tab when button is up
+    if(!data[2] && prevData[2] && !Logical[2])
+    {
+        GetNextHidReport(ControllerContext, &hidReport);
+        hidReport->ReportID = REPORTID_CAPKEY_KEYBOARD;
     }
 
     //
@@ -226,7 +208,7 @@ FillButtonsReportFromCache(
     for(int i = 0; i < RMI4_MAX_BUTTONS; i++)
         ControllerContext->ButtonsCache.prevPhysicalState[i] = ControllerContext->ButtonsCache.PhysicalState[i];
 
-exit:
+//exit:
     return status;
 }
 
@@ -326,28 +308,31 @@ ButtonsTimerHandler(
 
     BOOLEAN* Logical = controller->ButtonsCache.LogicalState;
 
-    PHID_INPUT_REPORT hidReport1 = NULL;
-    PHID_INPUT_REPORT hidReport2 = NULL;
+    PHID_INPUT_REPORT hidReport = NULL;
     PHID_KEY_REPORT hidKeys;
     BOOLEAN flag = FALSE;
 
-    if(Logical[0])
+    if(Logical[2])
     {
         //get two hidReports from Queue
-        GetNextHidReport(controller, &hidReport1);
-        GetNextHidReport(controller, &hidReport2);
+        //GetNextHidReport(controller, &hidReport);
+        //hidReport->ReportID = REPORTID_CAPKEY_KEYBOARD;
+        //hidKeys = &(hidReport->KeyReport);
+        //hidKeys->bKeys |= (1 << 2);//alt
 
-        hidReport1->ReportID = REPORTID_CAPKEY_KEYBOARD;
-        hidReport2->ReportID = REPORTID_CAPKEY_KEYBOARD;
+        GetNextHidReport(controller, &hidReport);
+        hidReport->ReportID = REPORTID_CAPKEY_KEYBOARD;
+        hidKeys = &(hidReport->KeyReport);
+        hidKeys->bKeys |= (1 << 2);//alt
+        hidKeys->bKeys |= (1 << 1);//tab
 
-        hidKeys = &(hidReport1->KeyReport);
-        hidKeys->bKeys |= (1 << 0);
-        hidKeys->bKeys |= (1 << 1);
-        hidKeys = &(hidReport2->KeyReport);
-        hidKeys->bKeys &= ~(1 << 0);
-        hidKeys->bKeys &= ~(1 << 1);
+        GetNextHidReport(controller, &hidReport);
+        hidReport->ReportID = REPORTID_CAPKEY_KEYBOARD;
+        hidKeys = &(hidReport->KeyReport);
+        hidKeys->bKeys |= (1 << 2);//alt
+        //hidKeys->bKeys &= ~(1 << 1);//UP Tab
 
-        Logical[0] = FALSE;
+        Logical[2] = FALSE;
         flag = TRUE;
     }
 
@@ -361,7 +346,7 @@ ButtonsTimerHandler(
         controller->HidQueueCount = 0;
     }
 
-    Trace(TRACE_LEVEL_INFORMATION, TRACE_FLAG_HID, "Buttons Timer reached!");
+    //Trace(TRACE_LEVEL_INFORMATION, TRACE_FLAG_HID, "Buttons Timer reached!");
 }
 
 void

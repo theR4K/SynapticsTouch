@@ -327,7 +327,6 @@ Return Value:
 	//
 	// Update the caller if we still have outstanding touches to report
 	//
-	//if (ControllerContext->TouchesReported < ControllerContext->TouchesTotal)
 
 exit:
 
