@@ -178,7 +178,7 @@ typedef struct _RMI4_CONTROLLER_CONTEXT
 		!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 	*/
 
-	RMI_REGISTER_DESCRIPTOR QueryRegDesc;
+	//RMI_REGISTER_DESCRIPTOR QueryRegDesc;
 	RMI_REGISTER_DESCRIPTOR ControlRegDesc;
 	RMI_REGISTER_DESCRIPTOR DataRegDesc;
 	size_t PacketSize;

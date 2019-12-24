@@ -19,8 +19,6 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\src\bitops.c" />
-    <ClCompile Include="..\src\hweight.c" />
     <ClCompile Include="..\src\init.c" />
     <ClCompile Include="..\src\backlight.c" />
     <ClCompile Include="..\src\power.c" />
@@ -46,8 +44,6 @@
     <ClInclude Include="..\include\controller.h" />
     <ClInclude Include="..\include\spb.h" />
     <ClInclude Include="..\include\backlight.h" />
-    <ClInclude Include="..\include\bitops.h" />
-    <ClInclude Include="..\include\hweight.h" />
     <ClInclude Include="..\include\resolutions.h" />
     <ClInclude Include="..\include\rmiinternal.h" />
     <ClInclude Include="..\include\F01.h" />

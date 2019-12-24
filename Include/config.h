@@ -13,3 +13,7 @@
 #define gpwstrManufacturerID L"Synaptics"
 #define gpwstrProductID      L"3200"
 #define gpwstrSerialNumber   L"4"
+
+
+//debug options
+//#define COORDS_DEBUG

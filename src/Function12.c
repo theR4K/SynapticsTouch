@@ -1,6 +1,5 @@
 #include "Function12.h"
 #include "debug.h"
-#include "bitops.h"
 #include "rmiinternal.h"
 
 NTSTATUS
@@ -490,7 +489,7 @@ RmiConfigureFunction12(
 
 	++queryF12Addr;
 
-	if (!(buf & BIT(0)))
+	if (!(buf & 0x1))
 	{
 		Trace(
 			TRACE_LEVEL_ERROR,
@@ -504,22 +503,22 @@ RmiConfigureFunction12(
 
 	//ControllerContext->HasDribble = !!(buf & BIT(3));
 
-	status = RmiReadRegisterDescriptor(
-		SpbContext,
-		queryF12Addr,
-		&ControllerContext->QueryRegDesc
-	);
+	//status = RmiReadRegisterDescriptor(
+	//	SpbContext,
+	//	queryF12Addr,
+	//	&ControllerContext->QueryRegDesc
+	//);
 
-	if(!NT_SUCCESS(status))
-	{
-
-		Trace(
-			TRACE_LEVEL_ERROR,
-			TRACE_FLAG_INIT,
-			"Failed to read the Query Register Descriptor - Status=%X",
-			status);
-		goto exit;
-	}
+	//if(!NT_SUCCESS(status))
+	//{
+    //
+	//	Trace(
+	//		TRACE_LEVEL_ERROR,
+	//		TRACE_FLAG_INIT,
+	//		"Failed to read the Query Register Descriptor - Status=%X",
+	//		status);
+	//	goto exit;
+	//}
 	queryF12Addr += 3;
 
 	status = RmiReadRegisterDescriptor(
@@ -626,11 +625,10 @@ RmiReadRegisterDescriptor(
 	BYTE buf[35];
 	int presense_offset = 1;
 	BYTE* struct_buf;
-	int reg;
+	USHORT reg;
 	int offset = 0;
-	int map_offset = 0;
 	int i;
-	int b;
+    char counter = 0;
 
 	Status = SpbReadDataSynchronously(
 		Context,
@@ -660,6 +658,12 @@ RmiReadRegisterDescriptor(
 	* and a bitmap which identified which packet registers are present
 	* for this particular register type (ie query, control, or data).
 	*/
+    Trace(
+        TRACE_LEVEL_INFORMATION,
+        TRACE_FLAG_INIT,
+        "address: %x",
+        Address
+    );
 	Status = SpbReadDataSynchronously(
 		Context,
 		Address,
@@ -668,6 +672,14 @@ RmiReadRegisterDescriptor(
 	);
 	if (!NT_SUCCESS(Status)) goto i2c_read_fail;
 	++Address;
+
+    for(i = 0; i < size_presence_reg;i++)
+        Trace(
+            TRACE_LEVEL_INFORMATION,
+            TRACE_FLAG_INIT,
+            "buff %d: %x",
+            i,buf[i]
+        );
 
 	if (buf[0] == 0)
 	{
@@ -679,19 +691,19 @@ RmiReadRegisterDescriptor(
 		Rdesc->StructSize = buf[0];
 	}
 
-	for (i = presense_offset; i < size_presence_reg; i++)
+    BYTE* regMap = buf + presense_offset;
+    BYTE regMapSize = size_presence_reg - presense_offset;
+
+    //calculate number of registers, not very fast but
+	for (i = 0; i < size_presence_reg*8; i++)
 	{
-		for (b = 0; b < 8; b++)
+		if (regMap[i>>3] & (0x1 << (i & 0x7)))
 		{
-			if (buf[i] & (0x1 << b))
-			{
-				bitmap_set(Rdesc->PresenceMap, map_offset, 1);
-			}
-			++map_offset;
+               counter++;
 		}
 	}
+    Rdesc->NumRegisters = counter;
 
-	Rdesc->NumRegisters = (UINT8)bitmap_weight(Rdesc->PresenceMap, RMI_REG_DESC_PRESENSE_BITS);
 	Rdesc->Registers = ExAllocatePoolWithTag(
 		NonPagedPoolNx,
 		Rdesc->NumRegisters * sizeof(RMI_REGISTER_DESC_ITEM),
@@ -704,11 +716,8 @@ RmiReadRegisterDescriptor(
 		goto exit;
 	}
 
-	/*
-	* Allocate a temporary buffer to hold the register structure.
-	* I'm not using devm_kzalloc here since it will not be retained
-	* after exiting this function
-	*/
+	
+	// Allocate a temporary buffer to hold the register structure.
 	struct_buf = ExAllocatePoolWithTag(
 		NonPagedPoolNx,
 		Rdesc->StructSize,
@@ -727,66 +736,77 @@ RmiReadRegisterDescriptor(
 	* register and a bitmap of all subpackets contained in the packet
 	* register.
 	*/
+    Trace(
+        TRACE_LEVEL_INFORMATION,
+        TRACE_FLAG_INIT,
+        "address: %x",
+        Address
+    );
 	Status = SpbReadDataSynchronously(
 		Context,
 		Address,
 		struct_buf,
 		Rdesc->StructSize
 	);
+    for(i = 0; ((unsigned int)i) < Rdesc->StructSize; i++)
+        Trace(
+            TRACE_LEVEL_INFORMATION,
+            TRACE_FLAG_INIT,
+            "struct_buf %d: %x",
+            i, struct_buf[i]
+        );
 
 	if (!NT_SUCCESS(Status)) goto free_buffer;
 
-	reg = find_first_bit(Rdesc->PresenceMap, RMI_REG_DESC_PRESENSE_BITS);
-	for (i = 0; i < Rdesc->NumRegisters; i++)
+    i = 0;
+	for (reg =  0; reg < regMapSize*8; reg++)
 	{
-		PRMI_REGISTER_DESC_ITEM item = &Rdesc->Registers[i];
-		int reg_size = struct_buf[offset];
+        if(regMap[reg >> 3] & (0x1 << (reg & 0x7)))
+        {
+            PRMI_REGISTER_DESC_ITEM item = &Rdesc->Registers[i++];
 
-		++offset;
-		if (reg_size == 0)
-		{
-			reg_size = struct_buf[offset] |
-				(struct_buf[offset + 1] << 8);
-			offset += 2;
-		}
+            //calculate reg size
+            int reg_size = struct_buf[offset];
+            ++offset;
+            if(reg_size == 0)
+            {
+                reg_size = struct_buf[offset] |
+                    (struct_buf[offset + 1] << 8);
+                offset += 2;
+            }
 
-		if (reg_size == 0)
-		{
-			reg_size = struct_buf[offset] |
-				(struct_buf[offset + 1] << 8) |
-				(struct_buf[offset + 2] << 16) |
-				(struct_buf[offset + 3] << 24);
-			offset += 4;
-		}
+            if(reg_size == 0)
+            {
+                reg_size = struct_buf[offset] |
+                    (struct_buf[offset + 1] << 8) |
+                    (struct_buf[offset + 2] << 16) |
+                    (struct_buf[offset + 3] << 24);
+                offset += 4;
+            }
 
-		item->Register = (USHORT)reg;
-		item->RegisterSize = reg_size;
+            item->Register = reg;
+            item->RegisterSize = reg_size;
 
-		map_offset = 0;
+            //calculate subPackets count
+            counter = 0;
+            do
+            {
+                for(int b = 0; b < 7; b++)
+                {
+                    if(struct_buf[offset] & (0x1 << b))
+                        counter++;
+                }
+            } while(struct_buf[offset++] & 0x80);
+            item->NumSubPackets = counter;
 
-		do
-		{
-			for (b = 0; b < 7; b++)
-			{
-				if (struct_buf[offset] & (0x1 << b))
-				{
-					bitmap_set(item->SubPacketMap, map_offset, 1);
-				}
-				++map_offset;
-			}
-		} while (struct_buf[offset++] & 0x80);
-
-		item->NumSubPackets = (BYTE)bitmap_weight(item->SubPacketMap, RMI_REG_DESC_SUBPACKET_BITS);
-
-		Trace(
-			TRACE_LEVEL_INFORMATION,
-			TRACE_FLAG_INIT,
-			"%s: reg: %d reg size: %ld subpackets: %d num reg: %d",
-			__func__,
-			item->Register, item->RegisterSize, item->NumSubPackets, Rdesc->NumRegisters
-		);
-
-		reg = find_next_bit(Rdesc->PresenceMap, RMI_REG_DESC_PRESENSE_BITS, reg + 1);
+            Trace(
+                TRACE_LEVEL_INFORMATION,
+                TRACE_FLAG_INIT,
+                "%s: reg: %d reg size: %ld subpackets: %d num reg: %d",
+                __func__,
+                item->Register, item->RegisterSize, counter, Rdesc->NumRegisters
+            );
+        }
 	}
 
 free_buffer:

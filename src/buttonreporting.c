@@ -205,6 +205,15 @@ FillButtonsReportFromCache(
     // On return of success, this request will be completed up the stack
     //
 
+    //Trace(
+    //    TRACE_LEVEL_INFORMATION,
+    //    TRACE_FLAG_INIT,
+    //    "buttons debug: prev %d, %d, %d; phy  %d, %d, %d; log  %d, %d, %d",
+    //    prevData[0], prevData[1], prevData[2],
+    //    data[0], data[1], data[2],
+    //    Logical[0], Logical[1], Logical[2]
+    //);
+
     for(int i = 0; i < RMI4_MAX_BUTTONS; i++)
         ControllerContext->ButtonsCache.prevPhysicalState[i] = ControllerContext->ButtonsCache.PhysicalState[i];
 

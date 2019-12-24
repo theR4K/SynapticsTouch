@@ -34,12 +34,6 @@
     <ClCompile Include="..\src\spb.c">
       <Filter>Source</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\hweight.c">
-      <Filter>Source\Cross Platform</Filter>
-    </ClCompile>
-    <ClCompile Include="..\src\bitops.c">
-      <Filter>Source\Cross Platform</Filter>
-    </ClCompile>
     <ClCompile Include="..\src\backlight.c">
       <Filter>Source\Buttons</Filter>
     </ClCompile>
@@ -113,12 +107,6 @@
     </ClInclude>
     <ClInclude Include="..\include\F12.h">
       <Filter>Include\Functions</Filter>
-    </ClInclude>
-    <ClInclude Include="..\include\hweight.h">
-      <Filter>Include\Cross Platform</Filter>
-    </ClInclude>
-    <ClInclude Include="..\include\bitops.h">
-      <Filter>Include\Cross Platform</Filter>
     </ClInclude>
     <ClInclude Include="..\include\buttonreporting.h">
       <Filter>Include\Buttons</Filter>

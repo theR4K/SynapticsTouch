@@ -1,5 +1,5 @@
 #include "debug.h"
-#include "bitops.h"
+//#include "bitops.h"
 #include "Function1A.h"
 
 NTSTATUS
