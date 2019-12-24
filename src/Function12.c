@@ -10,13 +10,9 @@ GetTouchesFromF12(
 {
 	NTSTATUS status;
 
-	int index, i, x, y, fingers;
+    int index;
 
-	BYTE* data1;
-	BYTE* controllerData;
-
-	ULONG FingerStatusRegister = { 0 };
-	RMI4_F12_DATA_POSITION FingerPosRegisters[RMI4_MAX_TOUCHES];
+    RMI4_F12_DATA_POSITION data1[RMI4_MAX_TOUCHES];
 
 	//
 	// Locate RMI data base address of 2D touch function
@@ -52,26 +48,15 @@ GetTouchesFromF12(
 		goto exit;
 	}
 
-	controllerData = ExAllocatePoolWithTag(
-		NonPagedPoolNx,
-		ControllerContext->PacketSize,
-		TOUCH_POOL_TAG_F12
-	);
-
-	if (controllerData == NULL)
-	{
-		status = STATUS_INSUFFICIENT_RESOURCES;
-		goto exit;
-	}
-
 	// 
 	// Packets we need is determined by context
 	//
 	status = SpbReadDataSynchronously(
 		SpbContext,
-		ControllerContext->Descriptors[index].DataBase,
-		controllerData,
-		(ULONG)ControllerContext->PacketSize
+        ControllerContext->Descriptors[index].DataBase +
+            ControllerContext->Data1Offset,
+		&data1[0],
+		sizeof(data1)
 	);
 
 	if (!NT_SUCCESS(status))
@@ -82,38 +67,10 @@ GetTouchesFromF12(
 			"Error reading finger status data - Status=%X",
 			status);
 
-		goto free_buffer;
+		goto exit;
 	}
 
-	data1 = &controllerData[ControllerContext->Data1Offset];
-	fingers = 0;
-
-	if (data1 != NULL)
-	{
-		for (i = 0; i < ControllerContext->MaxFingers; i++)
-		{
-			switch (data1[0])
-			{
-			case RMI_F12_OBJECT_FINGER:
-			case RMI_F12_OBJECT_STYLUS:
-				FingerStatusRegister |= RMI4_FINGER_STATE_PRESENT_WITH_ACCURATE_POS << i;
-				fingers++;
-				break;
-			default:
-				//fingerStatus[i] = RMI4_FINGER_STATE_NOT_PRESENT;
-				break;
-			}
-
-			x = (data1[2] << 8) | data1[1];
-			y = (data1[4] << 8) | data1[3];
-
-			FingerPosRegisters[i].X = x;
-			FingerPosRegisters[i].Y = y;
-
-			data1 += F12_DATA1_BYTES_PER_OBJ;
-		}
-	}
-	else
+	if (data1 == NULL)
 	{
 		Trace(
 			TRACE_LEVEL_ERROR,
@@ -121,16 +78,10 @@ GetTouchesFromF12(
 			"Error reading finger status data - empty buffer"
 		);
 
-		goto free_buffer;
+		goto exit;
 	}
 
-	UpdateLocalFingerCacheF12(FingerStatusRegister, FingerPosRegisters, ControllerContext);
-
-free_buffer:
-	ExFreePoolWithTag(
-		controllerData,
-		TOUCH_POOL_TAG_F12
-	);
+	UpdateLocalFingerCacheF12(&data1[0], ControllerContext);
 
 exit:
 	return status;
@@ -138,8 +89,7 @@ exit:
 
 VOID
 UpdateLocalFingerCacheF12(
-	IN ULONG FingerStatusRegister,
-	IN RMI4_F12_DATA_POSITION* FingerPosRegisters,
+	IN RMI4_F12_DATA_POSITION* FingerDataRegisters,
 	IN RMI4_CONTROLLER_CONTEXT* ControllerContext
 )
 /*++
@@ -221,7 +171,7 @@ Return Value:
 		//
 		// Take actions when a new contact is first reported as down
 		//
-		if ((((FingerStatusRegister >> i) & 0x1) != RMI4_FINGER_STATE_NOT_PRESENT) &&
+		if ((FingerDataRegisters[i].Status != RMI4_FINGER_STATE_NOT_PRESENT) &&
 			((Cache->FingerSlotValid & (1 << i)) == 0) &&
 			(Cache->FingerDownCount < ControllerContext->MaxFingers))
 		{
@@ -241,12 +191,13 @@ Return Value:
 		// When finger is down, update local cache with new information from
 		// the controller. When finger is up, we'll use last cached value
 		//
-		Cache->FingerSlot[i].fingerStatus = (UCHAR)((FingerStatusRegister >> i) & 0x1);
+		Cache->FingerSlot[i].fingerStatus = (UCHAR)FingerDataRegisters->Status;
 		if (Cache->FingerSlot[i].fingerStatus)
 		{
-			Cache->FingerSlot[i].x = FingerPosRegisters[i].X;
-			Cache->FingerSlot[i].y = FingerPosRegisters[i].Y;
+            Cache->FingerSlot[i].x = (FingerDataRegisters[i].XPosHi << 8) | FingerDataRegisters[i].XPosLo;
+            Cache->FingerSlot[i].y = (FingerDataRegisters[i].YPosHi << 8) | FingerDataRegisters[i].YPosLo;
 		}
+
 
 		//
 		// If a finger lifted, note the slot is now inactive so that any
@@ -431,7 +382,7 @@ RmiConfigureFunction12(
 
 	BYTE queryF12Addr = 0;
 	char buf;
-	USHORT data_offset = 0;
+	UCHAR data_offset = 0;
 	PRMI_REGISTER_DESC_ITEM item;
 
 	//
@@ -486,8 +437,7 @@ RmiConfigureFunction12(
 			status);
 		goto exit;
 	}
-
-	++queryF12Addr;
+    queryF12Addr++;
 
 	if (!(buf & 0x1))
 	{
@@ -501,24 +451,7 @@ RmiConfigureFunction12(
 		goto exit;
 	}
 
-	//ControllerContext->HasDribble = !!(buf & BIT(3));
-
-	//status = RmiReadRegisterDescriptor(
-	//	SpbContext,
-	//	queryF12Addr,
-	//	&ControllerContext->QueryRegDesc
-	//);
-
-	//if(!NT_SUCCESS(status))
-	//{
-    //
-	//	Trace(
-	//		TRACE_LEVEL_ERROR,
-	//		TRACE_FLAG_INIT,
-	//		"Failed to read the Query Register Descriptor - Status=%X",
-	//		status);
-	//	goto exit;
-	//}
+    //skip query registers
 	queryF12Addr += 3;
 
 	status = RmiReadRegisterDescriptor(
@@ -556,9 +489,9 @@ RmiConfigureFunction12(
 		goto exit;
 	}
 	queryF12Addr += 3;
-	ControllerContext->PacketSize = RmiRegisterDescriptorCalcSize(
-		&ControllerContext->DataRegDesc
-	);
+	//ControllerContext->PacketSize = RmiRegisterDescriptorCalcSize(
+	//	&ControllerContext->DataRegDesc
+	//);
 
 	// Skip rmi_f12_read_sensor_tuning for the prototype.
 
@@ -570,20 +503,21 @@ RmiConfigureFunction12(
 	* HID attention reports.
 	*/
 	item = RmiGetRegisterDescItem(&ControllerContext->DataRegDesc, 0);
-	if (item) data_offset += (USHORT)item->RegisterSize;
+	if (item) data_offset += (UCHAR)item->RegisterSize;
 
 	item = RmiGetRegisterDescItem(&ControllerContext->DataRegDesc, 1);
 	if (item != NULL)
 	{
 		ControllerContext->Data1Offset = data_offset;
 		ControllerContext->MaxFingers = item->NumSubPackets;
-		if ((ControllerContext->MaxFingers * F12_DATA1_BYTES_PER_OBJ) >
+        //not needed anymore, been used bcs bitMaps calculate wrong subPackets number
+		/*if ((ControllerContext->MaxFingers * F12_DATA1_BYTES_PER_OBJ) >
 			(BYTE)(ControllerContext->PacketSize - ControllerContext->Data1Offset))
 		{
 			ControllerContext->MaxFingers =
 				(BYTE)(ControllerContext->PacketSize - ControllerContext->Data1Offset) /
 				F12_DATA1_BYTES_PER_OBJ;
-		}
+		}*/
 
 		if (ControllerContext->MaxFingers > RMI4_MAX_TOUCHES)
 		{
@@ -621,10 +555,11 @@ RmiReadRegisterDescriptor(
 {
 	NTSTATUS Status;
 
-	BYTE size_presence_reg;
-	BYTE buf[35];
-	int presense_offset = 1;
-	BYTE* struct_buf;
+	BYTE regMapSize;
+    BYTE* buf = NULL;
+    BYTE* regMap;
+    BYTE structBufSize;
+	BYTE* structBuf;
 	USHORT reg;
 	int offset = 0;
 	int i;
@@ -632,16 +567,13 @@ RmiReadRegisterDescriptor(
 
 	Status = SpbReadDataSynchronously(
 		Context,
-		Address,
-		&size_presence_reg,
+		Address++,
+		&regMapSize,
 		sizeof(BYTE)
 	);
-
 	if (!NT_SUCCESS(Status)) goto i2c_read_fail;
 
-	++Address;
-
-	if (size_presence_reg < 0 || size_presence_reg > 35)
+	if (regMapSize < 0 || regMapSize > 35)
 	{
 		Trace(
 			TRACE_LEVEL_ERROR,
@@ -651,51 +583,57 @@ RmiReadRegisterDescriptor(
 		goto exit;
 	}
 
-	memset(buf, 0, sizeof(buf));
+    buf = ExAllocatePoolWithTag(
+        NonPagedPoolNx,
+        regMapSize,
+        TOUCH_POOL_TAG_F12
+    );
+
+    if(buf == NULL)
+    {
+        Status = STATUS_INSUFFICIENT_RESOURCES;
+        goto exit;
+    }
 
 	/*
 	* The presence register contains the size of the register structure
 	* and a bitmap which identified which packet registers are present
 	* for this particular register type (ie query, control, or data).
 	*/
-    Trace(
-        TRACE_LEVEL_INFORMATION,
-        TRACE_FLAG_INIT,
-        "address: %x",
-        Address
-    );
 	Status = SpbReadDataSynchronously(
 		Context,
-		Address,
+		Address++,
 		buf,
-		size_presence_reg
+        regMapSize
 	);
-	if (!NT_SUCCESS(Status)) goto i2c_read_fail;
-	++Address;
 
+	if (!NT_SUCCESS(Status)) goto i2c_read_fail;
+
+    /* need for nebug registers offsets
     for(i = 0; i < size_presence_reg;i++)
         Trace(
             TRACE_LEVEL_INFORMATION,
             TRACE_FLAG_INIT,
             "buff %d: %x",
             i,buf[i]
-        );
+        );*/
 
+    //before regMap we have size of the register structure
 	if (buf[0] == 0)
 	{
-		presense_offset = 3;
-		Rdesc->StructSize = buf[1] | (buf[2] << 8);
+        structBufSize = buf[1] | (buf[2] << 8);
+        regMap = buf + 3;
+        regMapSize -= 3;
 	}
 	else
 	{
-		Rdesc->StructSize = buf[0];
+        structBufSize = buf[0];
+        regMap = buf + 1;
+        regMapSize--;
 	}
 
-    BYTE* regMap = buf + presense_offset;
-    BYTE regMapSize = size_presence_reg - presense_offset;
-
     //calculate number of registers, not very fast but
-	for (i = 0; i < size_presence_reg*8; i++)
+	for (i = 0; i < regMapSize*8; i++)
 	{
 		if (regMap[i>>3] & (0x1 << (i & 0x7)))
 		{
@@ -706,7 +644,7 @@ RmiReadRegisterDescriptor(
 
 	Rdesc->Registers = ExAllocatePoolWithTag(
 		NonPagedPoolNx,
-		Rdesc->NumRegisters * sizeof(RMI_REGISTER_DESC_ITEM),
+		counter * sizeof(RMI_REGISTER_DESC_ITEM),
 		TOUCH_POOL_TAG_F12
 	);
 
@@ -718,13 +656,13 @@ RmiReadRegisterDescriptor(
 
 	
 	// Allocate a temporary buffer to hold the register structure.
-	struct_buf = ExAllocatePoolWithTag(
+	structBuf = ExAllocatePoolWithTag(
 		NonPagedPoolNx,
-		Rdesc->StructSize,
+		structBufSize,
 		TOUCH_POOL_TAG_F12
 	);
 
-	if (struct_buf == NULL)
+	if (structBuf == NULL)
 	{
 		Status = STATUS_INSUFFICIENT_RESOURCES;
 		goto exit;
@@ -736,27 +674,23 @@ RmiReadRegisterDescriptor(
 	* register and a bitmap of all subpackets contained in the packet
 	* register.
 	*/
-    Trace(
-        TRACE_LEVEL_INFORMATION,
-        TRACE_FLAG_INIT,
-        "address: %x",
-        Address
-    );
 	Status = SpbReadDataSynchronously(
 		Context,
 		Address,
-		struct_buf,
-		Rdesc->StructSize
+		structBuf,
+        structBufSize
 	);
+
+    if (!NT_SUCCESS(Status)) goto free_buffer2;
+
+    /* need for debug registers
     for(i = 0; ((unsigned int)i) < Rdesc->StructSize; i++)
         Trace(
             TRACE_LEVEL_INFORMATION,
             TRACE_FLAG_INIT,
             "struct_buf %d: %x",
             i, struct_buf[i]
-        );
-
-	if (!NT_SUCCESS(Status)) goto free_buffer;
+        );*/
 
     i = 0;
 	for (reg =  0; reg < regMapSize*8; reg++)
@@ -764,27 +698,27 @@ RmiReadRegisterDescriptor(
         if(regMap[reg >> 3] & (0x1 << (reg & 0x7)))
         {
             PRMI_REGISTER_DESC_ITEM item = &Rdesc->Registers[i++];
+            item->Register = reg;
 
             //calculate reg size
-            int reg_size = struct_buf[offset];
-            ++offset;
+            int reg_size = structBuf[offset++];
+
             if(reg_size == 0)
             {
-                reg_size = struct_buf[offset] |
-                    (struct_buf[offset + 1] << 8);
+                reg_size = structBuf[offset] |
+                    (structBuf[offset + 1] << 8);
                 offset += 2;
             }
 
             if(reg_size == 0)
             {
-                reg_size = struct_buf[offset] |
-                    (struct_buf[offset + 1] << 8) |
-                    (struct_buf[offset + 2] << 16) |
-                    (struct_buf[offset + 3] << 24);
+                reg_size = structBuf[offset] |
+                    (structBuf[offset + 1] << 8) |
+                    (structBuf[offset + 2] << 16) |
+                    (structBuf[offset + 3] << 24);
                 offset += 4;
             }
 
-            item->Register = reg;
             item->RegisterSize = reg_size;
 
             //calculate subPackets count
@@ -793,10 +727,10 @@ RmiReadRegisterDescriptor(
             {
                 for(int b = 0; b < 7; b++)
                 {
-                    if(struct_buf[offset] & (0x1 << b))
+                    if(structBuf[offset] & (0x1 << b))
                         counter++;
                 }
-            } while(struct_buf[offset++] & 0x80);
+            } while(structBuf[offset++] & 0x80);
             item->NumSubPackets = counter;
 
             Trace(
@@ -809,13 +743,20 @@ RmiReadRegisterDescriptor(
         }
 	}
 
-free_buffer:
+free_buffer2:
 	ExFreePoolWithTag(
-		struct_buf,
+		structBuf,
 		TOUCH_POOL_TAG_F12
 	);
 
 exit:
+    if(buf != NULL)
+    {
+        ExFreePoolWithTag(
+            buf,
+            TOUCH_POOL_TAG_F12
+        );
+    }
 	return Status;
 
 i2c_read_fail:
@@ -832,9 +773,7 @@ UINT8 RmiGetRegisterIndex(
 	USHORT reg
 )
 {
-	UINT8 i;
-
-	for (i = 0; i < Rdesc->NumRegisters; i++)
+	for (UINT8 i = 0; i < Rdesc->NumRegisters; i++)
 	{
 		if (Rdesc->Registers[i].Register == reg) return i;
 	}

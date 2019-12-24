@@ -1,5 +1,4 @@
 #include "debug.h"
-//#include "bitops.h"
 #include "Function11.h"
 
 #define UnpackFingerState(FingerStatusRegister, i)\

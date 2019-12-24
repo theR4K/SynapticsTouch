@@ -11,7 +11,6 @@ GetTouchesFromF12(
 
 VOID
 UpdateLocalFingerCacheF12(
-	IN ULONG FingerStatusRegister,
 	IN RMI4_F12_DATA_POSITION* FingerPosRegisters,
 	IN RMI4_CONTROLLER_CONTEXT* ControllerContext
 );
