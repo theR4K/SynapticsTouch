@@ -71,15 +71,6 @@ OnInterruptIsr(
 	devContext = GetDeviceContext(WdfInterruptGetDevice(Interrupt));
 
 	//
-	// If we're in diagnostic mode, let the diagnostic application handle
-	// interrupt servicing
-	//
-	if (devContext->DiagnosticMode != FALSE)
-	{
-		goto exit;
-	}
-
-	//
 	// Service the device interrupt
 	//
 

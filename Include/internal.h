@@ -52,13 +52,6 @@ typedef struct _DEVICE_EXTENSION
 	//
 	SPB_CONTEXT I2CContext;
 
-	//
-	// Test related
-	//
-	WDFQUEUE TestQueue;
-	volatile LONG TestSessionRefCnt;
-	BOOLEAN DiagnosticMode;
-
 	// 
 	// Power related
 	//
