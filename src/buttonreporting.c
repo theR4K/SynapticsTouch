@@ -25,8 +25,7 @@
 NTSTATUS
 RmiServiceCapacitiveButtonInterrupt(
 	IN RMI4_CONTROLLER_CONTEXT* ControllerContext,
-	IN SPB_CONTEXT* SpbContext,
-	IN BOOLEAN ReversedKeys
+	IN SPB_CONTEXT* SpbContext
 )
 /*++
 
@@ -51,15 +50,6 @@ Return Value:
 	RMI4_F1A_DATA_REGISTERS dataF1A;
 	int index;
 	NTSTATUS status;
-
-	//
-	// If the controller doesn't support buttons, ignore this interrupt
-	//
-	if (ControllerContext->HasButtons == FALSE)
-	{
-		status = STATUS_NOT_IMPLEMENTED;
-		goto exit;
-	}
 
 	//
 	// Get the the key press/release information from the controller
@@ -115,7 +105,7 @@ Return Value:
 
     for(int i = 0; i < RMI4_MAX_BUTTONS; i++)
     {
-        if(ReversedKeys)
+        if(ControllerContext->ButtonsReverced)
         {
             ControllerContext->ButtonsCache.PhysicalState[i] = ((dataF1A.Raw >> i) & 0x1);
         }

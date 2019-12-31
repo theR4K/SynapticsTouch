@@ -250,51 +250,62 @@ RmiConfigureFunctions(
 --*/
 {
 	NTSTATUS status = STATUS_SUCCESS;
-	int i;
-	BOOLEAN f01Flag = FALSE,
-		f11Flag = FALSE,
-		f1aFlag = FALSE;
 
+    USHORT irqOffset = 0;
 	ControllerContext->IsF12Digitizer = FALSE;
+    ControllerContext->InterruptCapButtonsMask = 0;
+    ControllerContext->InterruptTouchMask = 0;
 
-	for (i = 0; i < RMI4_MAX_FUNCTIONS; i++)
+	for (int i = 0; i < ControllerContext->FunctionCount; i++)
 	{
 		switch (ControllerContext->Descriptors[i].Number)
 		{
-		case RMI4_F01_RMI_DEVICE_CONTROL:
-			f01Flag = TRUE;
-			break;
-		case RMI4_F11_2D_TOUCHPAD_SENSOR:
-			f11Flag = TRUE;
-			break;
-		case RMI4_F12_2D_TOUCHPAD_SENSOR:
-			ControllerContext->IsF12Digitizer = TRUE;
-			break;
-		case RMI4_F1A_0D_CAP_BUTTON_SENSOR:
-			f1aFlag = TRUE;
-			break;
-		default:
-			break;
+		    case RMI4_F11_2D_TOUCHPAD_SENSOR:
+                //setup interrupt
+                //from spec - one function can setup up to 6 interrupts
+                ControllerContext->InterruptTouchMask = 
+                    (0x3f >> (6 - ControllerContext->Descriptors[i].IrqCount)) << irqOffset;
+
+                Trace(
+                    TRACE_LEVEL_INFORMATION,
+                    TRACE_FLAG_INIT,
+                    "founded %u interupts for f11. setting mast to %x",
+                    ControllerContext->Descriptors[i].IrqCount,
+                    ControllerContext->InterruptTouchMask
+                );
+                break;
+		    case RMI4_F12_2D_TOUCHPAD_SENSOR:
+                //setup interrupt
+                ControllerContext->InterruptTouchMask =
+                    (0x3f >> (6 - ControllerContext->Descriptors[i].IrqCount)) << irqOffset;
+
+		    	ControllerContext->IsF12Digitizer = TRUE;
+                Trace(
+                    TRACE_LEVEL_INFORMATION,
+                    TRACE_FLAG_INIT,
+                    "founded %u interupts for f12. setting mast to %x",
+                    ControllerContext->Descriptors[i].IrqCount,
+                    ControllerContext->InterruptTouchMask
+                );
+		    	break;
+		    case RMI4_F1A_0D_CAP_BUTTON_SENSOR:
+                //setup interrupt
+                ControllerContext->InterruptCapButtonsMask =
+                    (0x3f >> (6 - ControllerContext->Descriptors[i].IrqCount)) << irqOffset;
+
+                RmiConfigureFunction1A(ControllerContext, SpbContext);
+                Trace(
+                    TRACE_LEVEL_INFORMATION,
+                    TRACE_FLAG_INIT,
+                    "founded %u interupts for f1a. setting mast to %x",
+                    ControllerContext->Descriptors[i].IrqCount,
+                    ControllerContext->InterruptCapButtonsMask
+                );
+		    	break;
+		    default:
+		    	break;
 		}
-	}
-
-	if (f11Flag && ControllerContext->IsF12Digitizer)
-		f11Flag = FALSE;
-
-	if (f11Flag)
-	{
-		status = RmiConfigureFunction11(ControllerContext, SpbContext);
-
-		if (!NT_SUCCESS(status))
-		{
-			Trace(
-				TRACE_LEVEL_ERROR,
-				TRACE_FLAG_INIT,
-				"Error can't configure F11 - STATUS %x",
-				status
-			);
-			goto exit;
-		}
+        irqOffset += ControllerContext->Descriptors[i].IrqCount;
 	}
 
 	if (ControllerContext->IsF12Digitizer)
@@ -311,13 +322,27 @@ RmiConfigureFunctions(
 			);
 			goto exit;
 		}
-	}
+    }
+    else
+    {
+        status = RmiConfigureFunction11(ControllerContext, SpbContext);
 
-	if (f1aFlag)
-		status = RmiConfigureFunction1A(ControllerContext, SpbContext);
+        if(!NT_SUCCESS(status))
+        {
+            Trace(
+                TRACE_LEVEL_ERROR,
+                TRACE_FLAG_INIT,
+                "Error can't configure F11 - STATUS %x",
+                status
+            );
+            goto exit;
+        }
+    }
 
-	if (f01Flag)
-		status = RmiConfigureFunction01(ControllerContext, SpbContext);
+    //setup interrupt
+    ControllerContext->Config.DeviceSettings.InterruptEnable = 
+        ControllerContext->InterruptCapButtonsMask | ControllerContext->InterruptTouchMask;
+	status = RmiConfigureFunction01(ControllerContext, SpbContext);
 
     //temporaly init buttons timer TODO if(f1aflag || touchButtons)
     ButtonsInitTimer(ControllerContext);
@@ -493,7 +518,7 @@ NTSTATUS
 RmiCheckInterrupts(
 	IN RMI4_CONTROLLER_CONTEXT* ControllerContext,
 	IN SPB_CONTEXT* SpbContext,
-	IN ULONG* InterruptStatus
+	IN USHORT* InterruptStatus
 )
 /*++
 
@@ -712,7 +737,7 @@ TchStartDevice(
 --*/
 {
 	RMI4_CONTROLLER_CONTEXT* controller;
-	ULONG interruptStatus;
+	USHORT interruptStatus;
 	NTSTATUS status;
 
 	controller = (RMI4_CONTROLLER_CONTEXT*)ControllerContext;

@@ -14,8 +14,7 @@ typedef enum _REPORTED_BUTTON
 NTSTATUS
 RmiServiceCapacitiveButtonInterrupt(
 	IN RMI4_CONTROLLER_CONTEXT* ControllerContext,
-	IN SPB_CONTEXT* SpbContext,
-	IN BOOLEAN ReversedKeys
+	IN SPB_CONTEXT* SpbContext
 );
 
 REPORTED_BUTTON

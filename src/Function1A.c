@@ -20,17 +20,15 @@ RmiConfigureFunction1A(
 
 	if (index != ControllerContext->FunctionCount)
 	{
-		ControllerContext->HasButtons = TRUE;
-
-		//
 		// TODO: Get configuration data from registry once Synaptics
 		//       provides sane default values. Until then, assume the
 		//       object is configured for the desired product scenario
 		//       by default.
 		//
 
-		//setup interupts
-		ControllerContext->Config.DeviceSettings.InterruptEnable |= 0x1 << index;
+        ControllerContext->ButtonsReverced =
+            ControllerContext->InterruptCapButtonsMask & RMI4_INTERRUPT_BIT_0D_CAP_BUTTON_REVERSED;
+
 	}
 
 	return 0;

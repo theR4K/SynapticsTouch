@@ -56,17 +56,13 @@ typedef struct _RMI4_FUNCTION_DESCRIPTOR
 	BYTE CommandBase;
 	BYTE ControlBase;
 	BYTE DataBase;
-	union
+	struct _versionIrq
 	{
-		BYTE All;
-		struct
-		{
-			BYTE IrqCount : 3;
-			BYTE Reserved0 : 2;
-			BYTE FuncVer : 2;
-			BYTE Reserved1 : 1;
-		};
-	} VersionIrq;
+		BYTE IrqCount : 3;
+		BYTE Reserved0 : 2;
+		BYTE FuncVer : 2;
+		BYTE Reserved1 : 1;
+	};
 	BYTE Number;
 } RMI4_FUNCTION_DESCRIPTOR;
 
@@ -128,9 +124,13 @@ typedef struct _RMI4_CONTROLLER_CONTEXT
 	int FunctionOnPage[RMI4_MAX_FUNCTIONS];
 	int CurrentPage;
 
-	ULONG InterruptStatus;
+    //
+    //interupts
+    //
+	USHORT InterruptStatus;
+    USHORT InterruptTouchMask;
+    USHORT InterruptCapButtonsMask;
 
-	BOOLEAN HasButtons;
 	BOOLEAN ResetOccurred;
 	BOOLEAN InvalidConfiguration;
 	BOOLEAN DeviceFailure;
@@ -190,6 +190,7 @@ typedef struct _RMI4_CONTROLLER_CONTEXT
 	// Current button state
 	//
 	RMI4_BUTTONS_CACHE ButtonsCache;
+    BOOLEAN ButtonsReverced;
     WDFTIMER ButtonsTimer;
 
     HID_INPUT_REPORT HidQueue[MAX_REPORTS_IN_QUEUE];
@@ -200,7 +201,7 @@ NTSTATUS
 RmiCheckInterrupts(
 	IN RMI4_CONTROLLER_CONTEXT* ControllerContext,
 	IN SPB_CONTEXT* SpbContext,
-	IN ULONG* InterruptStatus
+	IN USHORT* InterruptStatus
 );
 
 int

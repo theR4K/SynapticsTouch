@@ -378,9 +378,6 @@ RmiConfigureFunction11(
 		goto exit;
 	}
 
-	//setup interupt
-	ControllerContext->Config.DeviceSettings.InterruptEnable |= 0x1 << index;
-
 exit:
 	return status;
 }

@@ -403,24 +403,21 @@ Return Value:
 	// Driver only services 0D cap button and 2D touch messages currently
 	//
 	if (controller->InterruptStatus &
-		~(RMI4_INTERRUPT_BIT_0D_CAP_BUTTON | RMI4_INTERRUPT_BIT_0D_CAP_BUTTON_REVERSED | RMI4_INTERRUPT_BIT_2D_TOUCH))
+		~(controller->InterruptTouchMask | controller->InterruptCapButtonsMask))
 	{
 		Trace(
 			TRACE_LEVEL_WARNING,
 			TRACE_FLAG_INTERRUPT,
 			"Ignoring following interrupt flags - STATUS:%X",
 			controller->InterruptStatus &
-			~(RMI4_INTERRUPT_BIT_0D_CAP_BUTTON | 
-				RMI4_INTERRUPT_BIT_0D_CAP_BUTTON_REVERSED |
-				RMI4_INTERRUPT_BIT_2D_TOUCH));
+                ~(controller->InterruptTouchMask | 
+                controller->InterruptCapButtonsMask));
 
 		//
 		// Mask away flags we don't service
 		//
 		controller->InterruptStatus &=
-			(RMI4_INTERRUPT_BIT_0D_CAP_BUTTON |
-				RMI4_INTERRUPT_BIT_0D_CAP_BUTTON_REVERSED |
-				RMI4_INTERRUPT_BIT_2D_TOUCH);
+            (controller->InterruptTouchMask | controller->InterruptCapButtonsMask);
 	}
 
 	//
@@ -429,29 +426,20 @@ Return Value:
 	//
 	status = STATUS_UNSUCCESSFUL;
 
-    BOOLEAN reversedKeys = FALSE;
 	//
 	// Service a capacitive button event if indicated by hardware
 	//
-	if (controller->InterruptStatus & RMI4_INTERRUPT_BIT_0D_CAP_BUTTON || 
-		controller->InterruptStatus & RMI4_INTERRUPT_BIT_0D_CAP_BUTTON_REVERSED)
+	if (controller->InterruptStatus & controller->InterruptCapButtonsMask)
 	{
-
-		if (controller->InterruptStatus & RMI4_INTERRUPT_BIT_0D_CAP_BUTTON_REVERSED)
-		{
-			reversedKeys = TRUE;
-		}
 
 		status = RmiServiceCapacitiveButtonInterrupt(
 			ControllerContext,
-			SpbContext,
-			reversedKeys);
+			SpbContext);
 
 		//
 		// mask cap buttons interupts after service
 		//
-		controller->InterruptStatus &= ~RMI4_INTERRUPT_BIT_0D_CAP_BUTTON;
-		controller->InterruptStatus &= ~RMI4_INTERRUPT_BIT_0D_CAP_BUTTON_REVERSED;
+        controller->InterruptStatus &= ~controller->InterruptCapButtonsMask;
 
         //
         //report if status unsuccess
@@ -469,7 +457,7 @@ Return Value:
 	//
 	// Service a touch data event if indicated by hardware 
 	//
-	if (controller->InterruptStatus & RMI4_INTERRUPT_BIT_2D_TOUCH)
+	if (controller->InterruptStatus & controller->InterruptTouchMask)
 	{
 
 		status = RmiServiceTouchDataInterrupt(
@@ -480,7 +468,7 @@ Return Value:
 		//
 		// clear interupt
 		//
-		controller->InterruptStatus &= ~RMI4_INTERRUPT_BIT_2D_TOUCH;
+		controller->InterruptStatus &= ~controller->InterruptTouchMask;
 
 		//
 		// report error
@@ -502,7 +490,7 @@ Return Value:
 exit:
     
     *HidReports = controller->HidQueue;
-    (*HidReportsLength) = controller->HidQueueCount;
+    *HidReportsLength = controller->HidQueueCount;
     controller->HidQueueCount = 0;
 
 	//

@@ -539,9 +539,6 @@ RmiConfigureFunction12(
 		RMI_F12_REPORTING_MODE_CONTINUOUS,
 		NULL);
 
-	//setup interupt
-	ControllerContext->Config.DeviceSettings.InterruptEnable |= 0x1 << index;
-
 exit:
 	return status;
 }
