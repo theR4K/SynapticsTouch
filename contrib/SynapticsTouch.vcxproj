@@ -40,7 +40,6 @@
   <ItemGroup>
     <ClInclude Include="..\include\config.h" />
     <ClInclude Include="..\include\debug.h" />
-    <ClInclude Include="..\include\winphoneabi.h" />
     <ClInclude Include="..\include\controller.h" />
     <ClInclude Include="..\include\spb.h" />
     <ClInclude Include="..\include\backlight.h" />

@@ -20,7 +20,7 @@
 
 #define INITGUID
 #include "rmiinternal.h"
-#include "devguid.h"
+//#include "devguid.h"
 #include "wdmguid.h"
 #include "debug.h"
 //#include "backlight.tmh"
@@ -511,9 +511,7 @@ Return Value:
 
 		value = 0;
 	}
-
-	BklContext->Timeout = value;
-
+    
 	status = WdfCollectionCreate(
 		WDF_NO_OBJECT_ATTRIBUTES,
 		&ledIndexStrings);
@@ -723,120 +721,6 @@ Return Value:
 	BklContext->CurrentBklIntensity = Intensity;
 }
 
-VOID
-TchBklGetLightSensorValue(
-	IN WDFWORKITEM WorkItem
-)
-/*++
-
-Routine Description:
-
-	This work item polls the ambient light sensor for new readings, which
-	are used to dim/fade capacitive key backlights to a level appropriate
-	for the users eyes.
-
-Arguments:
-
-	WorkItem - WDFWORKITEM object
-
-Return Value:
-
-	NTSTATUS indicating success or failure
-
---*/
-{
-	BKL_CONTEXT* context;
-	ULONG intensity;
-	WDF_MEMORY_DESCRIPTOR memory;
-	NTSTATUS status;
-	WORKITEM_CONTEXT* workItemContext;
-
-	workItemContext = GetTouchBacklightContext(WorkItem);
-	context = workItemContext->BklContext;
-
-	//
-	// Get an ALS sample. Note the read will be held for the sampling interval
-	// that we've configured, so it is not necessary to sleep/wait here. 
-	//
-	WDF_MEMORY_DESCRIPTOR_INIT_BUFFER(
-		&memory,
-		&context->AlsData,
-		sizeof(ALS_DATA));
-
-	while (context->TchBklPollAls == TRUE)
-	{
-		status = WdfIoTargetSendReadSynchronously(
-			context->AlsIoTarget,
-			NULL,
-			&memory,
-			NULL,
-			NULL,
-			NULL);
-
-		if (!NT_SUCCESS(status))
-		{
-			Trace(
-				TRACE_LEVEL_ERROR,
-				TRACE_FLAG_OTHER,
-				"Als driver reported error getting data - STATUS:%X",
-				status);
-
-			context->AlsStatus = status;
-			TchBklSleepMillisec(BKL_ALS_SAMPLING_INTERVAL);
-
-			continue;
-		}
-
-#ifdef ALS_BACKLIGHT_DEBUG
-		Trace(
-			TRACE_LEVEL_INFORMATION,
-			TRACE_FLAG_OTHER,
-			"ALS reading of %d lux",
-			context->AlsData.Sample);
-#endif
-
-
-		//
-		// Did we turn off the backlights while waiting?
-		//
-		if (context->TchBklPollAls == FALSE)
-		{
-			return;
-		}
-
-		//
-		// Do we have a timeout enabled, which has expired?
-		//
-		if (context->Timeout != 0 &&
-			GetTickCount() - context->LastInputTime > context->Timeout)
-		{
-			//
-			// Turn off backlights
-			//
-			WdfWaitLockAcquire(context->BacklightLock, NULL);
-
-			if (!NT_SUCCESS(TchBklEnable(context, FALSE)))
-			{
-				Trace(
-					TRACE_LEVEL_ERROR,
-					TRACE_FLAG_OTHER,
-					"Error disabling backlights, may be stuck on!");
-
-				NT_ASSERT(FALSE);
-			}
-
-			WdfWaitLockRelease(context->BacklightLock);
-			continue;
-		}
-
-		//
-		// Initiate an intensity change if necessary
-		//
-		intensity = TchBklGetIntensity(context, context->AlsData.Sample);
-		TchBklSetIntensity(context, intensity);
-	}
-}
-
 NTSTATUS
 TchBklEnable(
 	IN BKL_CONTEXT* BklContext,
@@ -860,7 +744,7 @@ Return Value:
 
 --*/
 {
-	WDF_MEMORY_DESCRIPTOR memory;
+	//WDF_MEMORY_DESCRIPTOR memory;
 	NTSTATUS status;
 
 	status = STATUS_SUCCESS;
@@ -868,297 +752,28 @@ Return Value:
 	//
 	// Are our drivers ready? If not do nothing yet.
 	//
-	if (BklContext->HwnReady == FALSE ||
-		BklContext->AlsReady == FALSE)
+	if (BklContext->HwnReady == FALSE)
 	{
 		goto exit;
 	}
 
-	if (Enable == TRUE)
-	{
-		//
-		// Reset last input timeout if one is enabled
-		//
-		if (BklContext->Timeout != 0)
-		{
-			BklContext->LastInputTime = (ULONG)GetTickCount();
-		}
+    if(Enable == TRUE)
+    {
+        //
+        // Request all LEDs to fade to ON to an initial value, ALS
+        // readings will adjust the intensity afterwards.
+        //
+        TchBklSetIntensity(BklContext, BKL_DEFAULT_INTENSITY);
+    }
+    else
+    {
+        TchBklSetIntensity(BklContext, 0);
+    }
 
-		//
-		// Start ALS if not already started
-		//
-		if (BklContext->TchBklPollAls == TRUE)
-		{
-			goto exit;
-		}
-
-		RtlZeroMemory(
-			&BklContext->AlsConfiguration,
-			sizeof(SENSOR_NOTIFICATION));
-
-		BklContext->AlsConfiguration.Size = sizeof(SENSOR_NOTIFICATION);
-		BklContext->AlsConfiguration.Flags = 0;
-		BklContext->AlsConfiguration.IntervalUs = BKL_ALS_SAMPLING_INTERVAL;
-
-		WDF_MEMORY_DESCRIPTOR_INIT_BUFFER(
-			&memory,
-			&BklContext->AlsConfiguration,
-			sizeof(SENSOR_NOTIFICATION));
-
-		// 
-		// Configure ALS sampling interval
-		//
-		status = WdfIoTargetSendIoctlSynchronously(
-			BklContext->AlsIoTarget,
-			NULL,
-			IOCTL_SENSOR_CLX_NOTIFICATION_CONFIGURE,
-			&memory,
-			NULL,
-			NULL,
-			NULL);
-
-		if (!NT_SUCCESS(status))
-		{
-			Trace(
-				TRACE_LEVEL_ERROR,
-				TRACE_FLAG_OTHER,
-				"Could not configure ALS notifications - STATUS:%X",
-				status);
-
-			BklContext->AlsStatus = status;
-
-			goto exit;
-		}
-
-		//
-		// Start the ALS sensor
-		//
-		status = WdfIoTargetSendIoctlSynchronously(
-			BklContext->AlsIoTarget,
-			NULL,
-			IOCTL_SENSOR_CLX_NOTIFICATION_START,
-			NULL,
-			NULL,
-			NULL,
-			NULL);
-
-		if (!NT_SUCCESS(status))
-		{
-			Trace(
-				TRACE_LEVEL_ERROR,
-				TRACE_FLAG_OTHER,
-				"Could not start ALS notification streaming - STATUS:%X",
-				status);
-
-			BklContext->AlsStatus = status;
-
-			goto exit;
-		}
-
-		//
-		// Request all LEDs to fade to ON to an initial value, ALS
-		// readings will adjust the intensity afterwards.
-		//
-		TchBklSetIntensity(BklContext, BKL_DEFAULT_INTENSITY);
-
-		//
-		// Kick off a work item to continuously monitor ambient light 
-		// changes and adjust the backlight intensity accordingly
-		//
-		BklContext->TchBklPollAls = TRUE;
-
-
-		WdfWorkItemEnqueue(BklContext->TchBklPollAlsWorkItem);
-	}
-	else
-	{
-		//
-		// Stop the ALS sensor
-		//
-		BklContext->TchBklPollAls = FALSE;
-
-		status = WdfIoTargetSendIoctlSynchronously(
-			BklContext->AlsIoTarget,
-			NULL,
-			IOCTL_SENSOR_CLX_NOTIFICATION_STOP,
-			NULL,
-			NULL,
-			NULL,
-			NULL);
-
-		if (!NT_SUCCESS(status))
-		{
-			Trace(
-				TRACE_LEVEL_ERROR,
-				TRACE_FLAG_OTHER,
-				"Could not start ALS notification streaming - STATUS:%X",
-				status);
-
-			BklContext->AlsStatus = status;
-		}
-
-		//
-		// Request all LEDs to fade to OFF state. 
-		//
-		TchBklSetIntensity(BklContext, 0);
-	}
 
 exit:
 
 	return status;
-}
-
-NTSTATUS
-TchBklOpenAlsDriver(
-	IN BKL_CONTEXT* BklContext,
-	IN PUNICODE_STRING AlsSymbolicLinkName
-)
-/*++
-
-Routine Description:
-
-	Opens ALS driver to control capacitive button backlighting
-
-Arguments:
-
-	BklContext - Touch controller driver context
-	AlsSymbolicLinkName - Name to use to access ALS driver
-
-Return Value:
-
-	NTSTATUS indicating success or failure
-
---*/
-{
-	WDF_IO_TARGET_OPEN_PARAMS openParams;
-	NTSTATUS status;
-
-	status = STATUS_SUCCESS;
-
-	//
-	// We need to guard against creating multiple IO target handles to ALS.
-	// From MSDN: if the caller specifies 
-	// PNPNOTIFY_DEVICE_INTERFACE_INCLUDE_EXISTING_INTERFACES, the system 
-	// may call the notification callback routine twice for a single 
-	// EventCategoryDeviceInterfaceChange event for an existing interface. 
-	// You can safely ignore the second call to the callback.
-	//
-	// Also, we don't need to worry about a race condition if AlsReady 
-	// hasn't been set to TRUE yet when a second arrival notification comes 
-	// in on another thread since we're holding up the PnP manager while
-	// executing this callback
-	//
-	if (BklContext->AlsReady == FALSE)
-	{
-		NT_ASSERT(BklContext->AlsIoTarget == NULL);
-
-		//
-		// Create a WDFIOTARGET object
-		//
-		status = WdfIoTargetCreate(
-			BklContext->FxDevice,
-			WDF_NO_OBJECT_ATTRIBUTES,
-			&BklContext->AlsIoTarget);
-
-		if (!NT_SUCCESS(status))
-		{
-			Trace(
-				TRACE_LEVEL_ERROR,
-				TRACE_FLAG_OTHER,
-				"Error: Could not create WDFIOTARGET object - STATUS:%X",
-				status);
-
-			goto exit;
-		}
-
-		//
-		// Open a handle to the HWN driver
-		//
-		WDF_IO_TARGET_OPEN_PARAMS_INIT_OPEN_BY_NAME(
-			&openParams,
-			AlsSymbolicLinkName,
-			GENERIC_READ | GENERIC_WRITE);
-
-		openParams.ShareAccess = FILE_SHARE_READ | FILE_SHARE_WRITE;
-
-		status = WdfIoTargetOpen(BklContext->AlsIoTarget, &openParams);
-
-		if (!NT_SUCCESS(status))
-		{
-			Trace(
-				TRACE_LEVEL_ERROR,
-				TRACE_FLAG_OTHER,
-				"Error: Could not open ALS driver target - STATUS:%X",
-				status);
-
-			WdfObjectDelete(BklContext->AlsIoTarget);
-			goto exit;
-		}
-
-		//
-		// Enable the backlight if both ALS and HWN are ready
-		//
-		WdfWaitLockAcquire(BklContext->BacklightLock, NULL);
-
-		BklContext->AlsReady = TRUE;
-
-		if (BklContext->HwnReady == TRUE &&
-			BklContext->AlsReady == TRUE)
-		{
-			TchBklEnable(BklContext, TRUE);
-		}
-
-		WdfWaitLockRelease(BklContext->BacklightLock);
-	}
-
-exit:
-
-	return status;
-}
-
-NTSTATUS
-TchBklCloseAlsDriver(
-	IN BKL_CONTEXT* BklContext
-)
-/*++
-
-Routine Description:
-
-	Closes ALS driver and stops control of capacitive button backlighting
-
-Arguments:
-
-	BklContext - Backlight control context
-
-Return Value:
-
-	NTSTATUS indicating success or failure
-
-*/
-{
-	if (BklContext->AlsReady != FALSE)
-	{
-		NT_ASSERT(BklContext->AlsIoTarget != NULL);
-
-		WdfWaitLockAcquire(BklContext->BacklightLock, NULL);
-
-		//
-		// Turn off the backlights to indicate ALS was torn down
-		//
-		TchBklEnable(BklContext, FALSE);
-		BklContext->AlsReady = FALSE;
-
-		WdfWaitLockRelease(BklContext->BacklightLock);
-
-		//
-		// Deleting the object will close the I/O target if it's not already 
-		// invalid.
-		//
-		WdfObjectDelete(BklContext->AlsIoTarget);
-		BklContext->AlsIoTarget = NULL;
-	}
-
-	return STATUS_SUCCESS;
 }
 
 NTSTATUS
@@ -1274,11 +889,7 @@ Return Value:
 
 	BklContext->HwnReady = TRUE;
 
-	if (BklContext->HwnReady == TRUE &&
-		BklContext->AlsReady == TRUE)
-	{
-		TchBklEnable(BklContext, TRUE);
-	}
+	TchBklEnable(BklContext, TRUE);
 
 	WdfWaitLockRelease(BklContext->BacklightLock);
 
@@ -1331,45 +942,6 @@ Return Value:
 	{
 		ExFreePoolWithTag(BklContext->HwnConfiguration, TOUCH_POOL_TAG);
 		BklContext->HwnConfiguration = NULL;
-	}
-
-	return STATUS_SUCCESS;
-}
-
-NTSTATUS
-TchBklOnAlsDeviceReady(
-	IN PVOID _DeviceChange,
-	IN PVOID _BklContext
-)
-/*++
-
-Routine Description:
-
-	This routine is called when the SENSOR_TYPE_AMBIENT_LIGHT is available or
-	is going away. We initialize or stop communication with the driver here.
-
-Arguments:
-
-	_DeviceChange - Structure that provides us with a symbolic name used
-		to open the Als driver for reading
-	_BklContext - Backlight control context
-
-Return Value:
-
-	NTSTATUS indicating success or failure
-
-*/
-{
-	PDEVICE_INTERFACE_CHANGE_NOTIFICATION DeviceChange = (PDEVICE_INTERFACE_CHANGE_NOTIFICATION)_DeviceChange;
-	BKL_CONTEXT* BklContext = (BKL_CONTEXT*)_BklContext;
-
-	if (IsEqualGUID(&DeviceChange->Event, &GUID_DEVICE_INTERFACE_ARRIVAL))
-	{
-		TchBklOpenAlsDriver(BklContext, DeviceChange->SymbolicLinkName);
-	}
-	else
-	{
-		TchBklCloseAlsDriver(BklContext);
 	}
 
 	return STATUS_SUCCESS;
@@ -1508,11 +1080,8 @@ Return Value:
 
 --*/
 {
-	WDF_OBJECT_ATTRIBUTES attributes;
-	WDF_WORKITEM_CONFIG config;
 	BKL_CONTEXT* context;
 	NTSTATUS status;
-	WORKITEM_CONTEXT* workItemContext;
 
 	status = STATUS_UNSUCCESSFUL;
 
@@ -1540,8 +1109,6 @@ Return Value:
 	RtlZeroMemory(context, sizeof(BKL_CONTEXT));
 	context->FxDevice = FxDevice;
 	context->HwnReady = FALSE;
-	context->AlsReady = FALSE;
-	context->LastInputTime = (ULONG)GetTickCount();
 
 	status = WdfWaitLockCreate(
 		WDF_NO_OBJECT_ATTRIBUTES,
@@ -1574,34 +1141,7 @@ Return Value:
 		goto exit;
 	}
 
-	//
-	// Allocate a work item which will poll the ALS sensor for light changes
-	//
-	WDF_WORKITEM_CONFIG_INIT(&config, TchBklGetLightSensorValue);
-	WDF_OBJECT_ATTRIBUTES_INIT(&attributes);
-	WDF_OBJECT_ATTRIBUTES_SET_CONTEXT_TYPE(&attributes, WORKITEM_CONTEXT);
-	attributes.ParentObject = context->FxDevice;
-
-	status = WdfWorkItemCreate(
-		&config,
-		&attributes,
-		&context->TchBklPollAlsWorkItem);
-
-	if (!NT_SUCCESS(status))
-	{
-		Trace(
-			TRACE_LEVEL_ERROR,
-			TRACE_FLAG_OTHER,
-			"Could not create WDFWORKITEM object - STATUS:%X",
-			status);
-
-		goto exit;
-	}
-
-	workItemContext =
-		GetTouchBacklightContext(context->TchBklPollAlsWorkItem);
-	workItemContext->BklContext = context;
-
+    
 	//
 	// Read the Milliux <-> Intensity table from the registry
 	//
@@ -1639,29 +1179,6 @@ Return Value:
 			TRACE_LEVEL_ERROR,
 			TRACE_FLAG_OTHER,
 			"Could not register for HWN driver interface arrival - STATUS:%X",
-			status);
-
-		goto exit;
-	}
-
-	//
-	// Check for the ALS driver to become available (if not already)
-	//
-	status = IoRegisterPlugPlayNotification(
-		EventCategoryDeviceInterfaceChange,
-		PNPNOTIFY_DEVICE_INTERFACE_INCLUDE_EXISTING_INTERFACES,
-		(PVOID)&SENSOR_TYPE_AMBIENT_LIGHT,
-		WdfDriverWdmGetDriverObject(WdfGetDriver()),
-		(PDRIVER_NOTIFICATION_CALLBACK_ROUTINE)TchBklOnAlsDeviceReady,
-		context,
-		&context->AlsPnpNotificationEntry);
-
-	if (!NT_SUCCESS(status))
-	{
-		Trace(
-			TRACE_LEVEL_ERROR,
-			TRACE_FLAG_OTHER,
-			"Could not register for ALS driver interface arrival - STATUS:%X",
 			status);
 
 		goto exit;
@@ -1725,11 +1242,6 @@ Return Value:
 
 --*/
 {
-	//
-	// Disable timeout if enabled to prevent TchBklNotifyTouchActivity
-	// from accessing context
-	//
-	BklContext->Timeout = 0;
 
 	//
 	// Deregister for monitor state notifications
@@ -1745,24 +1257,6 @@ Return Value:
 	// Cut the lights
 	//
 	TchBklEnable(BklContext, FALSE);
-
-	//
-	// Unsubscribe from Pnp notifications for ALS
-	//
-	if (BklContext->AlsPnpNotificationEntry != NULL)
-	{
-		IoUnregisterPlugPlayNotificationEx(
-			BklContext->AlsPnpNotificationEntry);
-		BklContext->AlsPnpNotificationEntry = NULL;
-	}
-
-	//
-	// Close ALS driver if it was open
-	//
-	if (BklContext->AlsReady == TRUE)
-	{
-		TchBklCloseAlsDriver(BklContext);
-	}
 
 	//
 	// Unsubscribe from Pnp notifications for HWN
@@ -1813,61 +1307,4 @@ Return Value:
 	// Free context
 	//
 	ExFreePoolWithTag(BklContext, TOUCH_POOL_TAG);
-}
-
-VOID
-TchBklNotifyTouchActivity(
-	IN BKL_CONTEXT* BklContext,
-	IN DWORD Time
-)
-/*++
-
-Routine Description:
-
-	Re-enables the backlights if they timed out and the user touched the screen
-
-Arguments:
-
-	BklContext - Backlight control context
-	Time - Time of user input (touch or button)
-
-Return Value:
-
-	None.
-
---*/
-{
-	NTSTATUS status;
-
-	//
-	// If no backlights are controlled or no timeout is specified, ignore
-	//
-	if ((BklContext == NULL) || (BklContext->Timeout == 0))
-	{
-		return;
-	}
-
-	BklContext->LastInputTime = Time;
-
-	//
-	// If ALS monitoring is disabled, re-enable it
-	//
-	if (BklContext->TchBklPollAls == FALSE)
-	{
-		WdfWaitLockAcquire(BklContext->BacklightLock, NULL);
-
-		status = TchBklEnable(BklContext, TRUE);
-
-		if (!NT_SUCCESS(status))
-		{
-			Trace(
-				TRACE_LEVEL_ERROR,
-				TRACE_FLAG_OTHER,
-				"Error enabling backlights, may be stuck off!");
-
-			NT_ASSERT(FALSE);
-		}
-
-		WdfWaitLockRelease(BklContext->BacklightLock);
-	}
 }

@@ -54,9 +54,6 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\include\winphoneabi.h">
-      <Filter>Include</Filter>
-    </ClInclude>
     <ClInclude Include="..\include\spb.h">
       <Filter>Include</Filter>
     </ClInclude>

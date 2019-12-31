@@ -493,15 +493,6 @@ exit:
     *HidReportsLength = controller->HidQueueCount;
     controller->HidQueueCount = 0;
 
-	//
-	// Turn on capacitive key backlights that may have timed out
-	// due to user inactivity
-	//
-	if (NT_SUCCESS(status) && (controller->BklContext != NULL))
-	{
-		TchBklNotifyTouchActivity(controller->BklContext, (DWORD)GetTickCount());
-	}
-
 	WdfWaitLockRelease(controller->ControllerLock);
 
 	return status;
