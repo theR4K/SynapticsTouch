@@ -20,412 +20,78 @@
 
 #define INITGUID
 #include "rmiinternal.h"
-//#include "devguid.h"
 #include "wdmguid.h"
 #include "debug.h"
-//#include "backlight.tmh"
-
-//
-// Default milllux-to-backlight-intensity-percentage table
-//
-static BKL_LUX_TABLE_ENTRY g_DefaultLuxMap[BKL_NUM_LEVELS_DEFAULT] =
-{
-	{
-		0,
-		100000,
-		5
-	},
-	{
-		100000,
-		200000,
-		10
-	},
-	{
-		200000,
-		400000,
-		25
-	},
-	{
-		400000,
-		0xFFFFFFFF,
-		0
-	},
-};
-
-__inline
-VOID
-TchBklSleepMillisec(
-	IN ULONG TimeMsec
-)
-/*++
-
-Routine Description:
-
-	This helper routine puts the caller to sleep
-
-Arguments:
-
-	TimeMsec - time to sleep in millisec
-
-Return Value:
-
-	None.
-
---*/
-{
-	LARGE_INTEGER Delay = { 0 };
-
-	Delay.QuadPart = WDF_REL_TIMEOUT_IN_MS(TimeMsec);
-
-	KeDelayExecutionThread(KernelMode, FALSE, &Delay);
-}
-
-
-NTSTATUS
-TchBklGetDefaultLuxIntensityMap(
-	IN BKL_CONTEXT* BklContext
-)
-/*++
-
-Routine Description:
-
-	This helper routine copies the default lux table to device context.
-
-Arguments:
-
-	BklContext - Backlight control context structure
-
-Return Value:
-
-	NTSTATUS indicating success or failure
-
---*/
-{
-	BklContext->BklNumLevels = BKL_NUM_LEVELS_DEFAULT;
-
-	BklContext->BklLuxTable = (BKL_LUX_TABLE_ENTRY*)
-		ExAllocatePoolWithTag(
-			NonPagedPool,
-			sizeof(BKL_LUX_TABLE_ENTRY) * BklContext->BklNumLevels,
-			TOUCH_POOL_TAG);
-
-	if (BklContext->BklLuxTable == NULL)
-	{
-		Trace(
-			TRACE_LEVEL_ERROR,
-			TRACE_FLAG_OTHER,
-			"Could not allocate memory for lux table, out of memory");
-
-		return STATUS_UNSUCCESSFUL;
-	}
-
-	RtlCopyMemory(
-		BklContext->BklLuxTable,
-		g_DefaultLuxMap,
-		sizeof(g_DefaultLuxMap));
-
-	return STATUS_SUCCESS;
-}
 
 NTSTATUS
 TchBklGetValueFromCollection(
-	IN WDFCOLLECTION* Collection,
-	IN ULONG Index,
-	OUT PULONG Value
+    IN WDFCOLLECTION* Collection,
+    IN ULONG Index,
+    OUT PULONG Value
 )
 /*++
 
 Routine Description:
 
-	This helper routine grabs a ULONG encoded as a UNICODE_STRING wrapped in
-	a WDFSTRING object stored in a WDFCOLLECTION and stores it in "Value".
+    This helper routine grabs a ULONG encoded as a UNICODE_STRING wrapped in
+    a WDFSTRING object stored in a WDFCOLLECTION and stores it in "Value".
 
 Arguments:
 
-	Collection - must be a WDFCOLLECTION of WDFSTRINGs
-	Index - the index in the collection of interest
-	Value - pointer which receives the integer value of the string at Index
+    Collection - must be a WDFCOLLECTION of WDFSTRINGs
+    Index - the index in the collection of interest
+    Value - pointer which receives the integer value of the string at Index
 
 Return Value:
 
-	NTSTATUS indicating success or failure
+    NTSTATUS indicating success or failure
 
 --*/
 
 {
-	NTSTATUS status;
-	WDFSTRING stringHandle;
-	UNICODE_STRING string;
-	ULONG value;
+    NTSTATUS status;
+    WDFSTRING stringHandle;
+    UNICODE_STRING string;
+    ULONG value;
 
-	stringHandle = WdfCollectionGetItem(*Collection, Index);
+    stringHandle = WdfCollectionGetItem(*Collection, Index);
 
-	if (NULL == stringHandle)
-	{
-		Trace(
-			TRACE_LEVEL_ERROR,
-			TRACE_FLAG_OTHER,
-			"String %d in registry lux table is missing",
-			Index);
+    if(NULL == stringHandle)
+    {
+        Trace(
+            TRACE_LEVEL_ERROR,
+            TRACE_FLAG_OTHER,
+            "String %d in registry lux table is missing",
+            Index);
 
-		status = STATUS_UNSUCCESSFUL;
-		goto exit;
-	}
+        status = STATUS_UNSUCCESSFUL;
+        goto exit;
+    }
 
-	WdfStringGetUnicodeString(stringHandle, &string);
+    WdfStringGetUnicodeString(stringHandle, &string);
 
-	status = RtlUnicodeStringToInteger(
-		&string,
-		10,
-		&value);
+    status = RtlUnicodeStringToInteger(
+        &string,
+        10,
+        &value);
 
-	if (!NT_SUCCESS(status))
-	{
-		Trace(
-			TRACE_LEVEL_ERROR,
-			TRACE_FLAG_OTHER,
-			"String %d in registry lux table is invalid - STATUS:%X",
-			Index,
-			status);
+    if(!NT_SUCCESS(status))
+    {
+        Trace(
+            TRACE_LEVEL_ERROR,
+            TRACE_FLAG_OTHER,
+            "String %d in registry lux table is invalid - STATUS:%X",
+            Index,
+            status);
 
-		goto exit;
-	}
+        goto exit;
+    }
 
-	*Value = value;
-
-exit:
-
-	return status;
-}
-
-NTSTATUS
-TchBklGetCustomLuxIntensityMap(
-	IN BKL_CONTEXT* BklContext
-)
-/*++
-
-Routine Description:
-
-	This helper routine reads and parses registry strings to build a lux table
-	as specified by an OEM, with an arbitrary number of levels. This routine
-	validates that sane entries are provided.
-
-Arguments:
-
-	BklContext - Backlight control context structure
-
-Return Value:
-
-	NTSTATUS indicating success or failure
-
---*/
-{
-	DECLARE_CONST_UNICODE_STRING(bklIntensityMappings, BKL_LUX_TABLE_INTENSITIES_0);//BKL_LUX_TABLE_INTENSITIES);
-	DECLARE_CONST_UNICODE_STRING(bklLuxRangesValue, BKL_LUX_TABLE_RANGES);
-	DECLARE_CONST_UNICODE_STRING(bklSettingsPath, BKL_REGISTRY_PATH);
-
-	WDFCOLLECTION luxRangeStrings;
-	ULONG i;
-	WDFCOLLECTION intensityStrings;
-	WDFKEY key;
-	NTSTATUS status;
-	ULONG value = 0;
-
-	key = NULL;
-	luxRangeStrings = NULL;
-	intensityStrings = NULL;
-
-	status = WdfRegistryOpenKey(
-		NULL,
-		&bklSettingsPath,
-		KEY_READ,
-		WDF_NO_OBJECT_ATTRIBUTES,
-		&key);
-
-	if (!NT_SUCCESS(status))
-	{
-		Trace(
-			TRACE_LEVEL_WARNING,
-			TRACE_FLAG_OTHER,
-			"Couldn't open registry path for cap button backlights, disabled");
-
-		goto exit;
-	}
-
-	status = WdfCollectionCreate(
-		WDF_NO_OBJECT_ATTRIBUTES,
-		&luxRangeStrings);
-
-	if (!NT_SUCCESS(status))
-	{
-		Trace(
-			TRACE_LEVEL_ERROR,
-			TRACE_FLAG_OTHER,
-			"Couldn't allocate a collection for lux ranges - STATUS:%X",
-			status);
-
-		goto exit;
-	}
-
-	status = WdfCollectionCreate(
-		WDF_NO_OBJECT_ATTRIBUTES,
-		&intensityStrings);
-
-	if (!NT_SUCCESS(status))
-	{
-		Trace(
-			TRACE_LEVEL_ERROR,
-			TRACE_FLAG_OTHER,
-			"Couldn't allocate a collection for lux ranges - STATUS:%X",
-			status);
-
-		goto exit;
-	}
-
-	status = WdfRegistryQueryMultiString(
-		key,
-		&bklLuxRangesValue,
-		WDF_NO_OBJECT_ATTRIBUTES,
-		luxRangeStrings);
-
-	if (!NT_SUCCESS(status))
-	{
-		Trace(
-			TRACE_LEVEL_ERROR,
-			TRACE_FLAG_OTHER,
-			"Couldn't retrieve lux range strings from registry - STATUS:%X",
-			status);
-
-		goto exit;
-	}
-
-	status = WdfRegistryQueryMultiString(
-		key,
-		&bklIntensityMappings,
-		WDF_NO_OBJECT_ATTRIBUTES,
-		intensityStrings);
-
-	if (!NT_SUCCESS(status))
-	{
-		Trace(
-			TRACE_LEVEL_ERROR,
-			TRACE_FLAG_OTHER,
-			"Couldn't retrieve intensity strings from registry - STATUS:%X",
-			status);
-
-		goto exit;
-	}
-
-	//
-	// Validate that at least one non-null string was provided
-	//
-	BklContext->BklNumLevels = WdfCollectionGetCount(luxRangeStrings);
-
-	if (BklContext->BklNumLevels == 0)
-	{
-		Trace(
-			TRACE_LEVEL_ERROR,
-			TRACE_FLAG_OTHER,
-			"No range strings provided, registry lux table is invalid");
-
-		status = STATUS_UNSUCCESSFUL;
-		goto exit;
-	}
-
-	//
-	// Make sure the count of intensity strings matches the count of ranges
-	//
-	if (WdfCollectionGetCount(intensityStrings) !=
-		BklContext->BklNumLevels)
-	{
-		Trace(
-			TRACE_LEVEL_ERROR,
-			TRACE_FLAG_OTHER,
-			"Error in registry lux mapping table, expect %d levels, found %d",
-			BklContext->BklNumLevels,
-			WdfCollectionGetCount(intensityStrings));
-
-		status = STATUS_UNSUCCESSFUL;
-		goto exit;
-	}
-
-	//
-	// Allocate some space for the mapping table
-	//
-	BklContext->BklLuxTable = (BKL_LUX_TABLE_ENTRY*)
-		ExAllocatePoolWithTag(
-			NonPagedPool,
-			sizeof(BKL_LUX_TABLE_ENTRY) * BklContext->BklNumLevels + 1,
-			TOUCH_POOL_TAG);
-
-	if (NULL == BklContext->BklLuxTable)
-	{
-		Trace(
-			TRACE_LEVEL_ERROR,
-			TRACE_FLAG_OTHER,
-			"Could not allocate memory for lux table, out of memory");
-
-		status = STATUS_UNSUCCESSFUL;
-		goto exit;
-	}
-
-	//
-	// Walk the registry values and build the table, failing on error
-	// TODO: validate more
-	//
-
-	for (i = 0; i < BklContext->BklNumLevels; i++)
-	{
-		BklContext->BklLuxTable[i].Min = value;
-
-		status = TchBklGetValueFromCollection(&luxRangeStrings, i, &value);
-		if (!NT_SUCCESS(status))
-		{
-			goto exit;
-		}
-
-		BklContext->BklLuxTable[i].Max = value;
-
-		status = TchBklGetValueFromCollection(&intensityStrings, i, &value);
-
-		if (!NT_SUCCESS(status))
-		{
-			goto exit;
-		}
-
-		BklContext->BklLuxTable[i].Intensity = value;
-	}
+    *Value = value;
 
 exit:
 
-	if (luxRangeStrings != NULL)
-	{
-		WdfObjectDelete(luxRangeStrings);
-	}
-
-	if (intensityStrings != NULL);
-	{
-		WdfObjectDelete(intensityStrings);
-	}
-
-	if (key != NULL)
-	{
-		WdfRegistryClose(key);
-	}
-
-	if (!NT_SUCCESS(status))
-	{
-		if (BklContext->BklLuxTable != NULL)
-		{
-			ExFreePoolWithTag(
-				BklContext->BklLuxTable,
-				TOUCH_POOL_TAG);
-
-			BklContext->BklLuxTable = NULL;
-		}
-	}
-
-	return status;
+    return status;
 }
 
 NTSTATUS
@@ -617,43 +283,6 @@ exit:
 	return status;
 }
 
-ULONG
-TchBklGetIntensity(
-	IN BKL_CONTEXT* BklContext,
-	IN ULONG LuxValue
-)
-/*++
-
-Routine Description:
-
-	This helper routine takes the current light sensor reading and
-	looks up the corresponding intensity in the lux table.
-
-Arguments:
-
-	BklContext - backlight control context structure
-	LuxValue - current lux value
-
-Return Value:
-
-	ULONG representing the percentage of backlight intensity to set
-
---*/
-{
-	ULONG i;
-
-	for (i = 0; i < BklContext->BklNumLevels; i++)
-	{
-		if (LuxValue < BklContext->BklLuxTable[i].Max &&
-			LuxValue >= BklContext->BklLuxTable[i].Min)
-		{
-			return BklContext->BklLuxTable[i].Intensity;
-		}
-	}
-
-	return 0;
-}
-
 VOID
 TchBklSetIntensity(
 	BKL_CONTEXT* BklContext,
@@ -699,13 +328,14 @@ Return Value:
 		BklContext->HwnConfiguration,
 		(ULONG)BklContext->HwnConfigurationSize);
 
+
 	status = WdfIoTargetSendIoctlSynchronously(
 		BklContext->HwnIoTarget,
 		NULL,
 		IOCTL_HWN_SET_STATE,
 		&memory,
 		NULL,
-		NULL,
+	    NULL,
 		NULL);
 
 	if (!NT_SUCCESS(status))
@@ -745,24 +375,23 @@ Return Value:
 --*/
 {
 	//WDF_MEMORY_DESCRIPTOR memory;
-	NTSTATUS status;
-
-	status = STATUS_SUCCESS;
+	NTSTATUS status = STATUS_SUCCESS;
 
 	//
 	// Are our drivers ready? If not do nothing yet.
 	//
 	if (BklContext->HwnReady == FALSE)
 	{
+        Trace(
+            TRACE_LEVEL_INFORMATION,
+            TRACE_FLAG_POWER,
+            "Driver tried enable backlight but HwnReady = false"
+            );
 		goto exit;
 	}
 
     if(Enable == TRUE)
     {
-        //
-        // Request all LEDs to fade to ON to an initial value, ALS
-        // readings will adjust the intensity afterwards.
-        //
         TchBklSetIntensity(BklContext, BKL_DEFAULT_INTENSITY);
     }
     else
@@ -798,6 +427,11 @@ Return Value:
 
 --*/
 {
+    Trace(
+        TRACE_LEVEL_INFORMATION,
+        TRACE_FLAG_INIT,
+        "call to TchBklOpenHwnDriver"
+    );
 	ULONG i;
 	WDF_IO_TARGET_OPEN_PARAMS openParams;
 	NTSTATUS status;
@@ -918,6 +552,11 @@ Return Value:
 
 */
 {
+    Trace(
+        TRACE_LEVEL_INFORMATION,
+        TRACE_FLAG_INIT,
+        "call to TchBklCloseHwnDriver"
+    );
 	WdfWaitLockAcquire(BklContext->BacklightLock, NULL);
 
 	//
@@ -1141,26 +780,6 @@ Return Value:
 		goto exit;
 	}
 
-    
-	//
-	// Read the Milliux <-> Intensity table from the registry
-	//
-	status = TchBklGetCustomLuxIntensityMap(context);
-
-	if (!NT_SUCCESS(status))
-	{
-		Trace(
-			TRACE_LEVEL_WARNING,
-			TRACE_FLAG_OTHER,
-			"Warning, no platform-configured lux mapping table in registry - STATUS:%X",
-			status);//ST//
-
-		//
-		// And grab the default table if it's not specified or specified wrong
-		//
-		TchBklGetDefaultLuxIntensityMap(context);
-	}
-
 	//
 	// Check for the HWN driver to become available (if not already)
 	//
@@ -1274,15 +893,6 @@ Return Value:
 	if (BklContext->HwnReady == TRUE)
 	{
 		TchBklCloseHwnDriver(BklContext);
-	}
-
-	//
-	// Deallocate Lux table if allocated
-	//
-	if (BklContext->BklLuxTable != NULL)
-	{
-		ExFreePoolWithTag(BklContext->BklLuxTable, TOUCH_POOL_TAG);
-		BklContext->BklLuxTable = NULL;
 	}
 
 	//

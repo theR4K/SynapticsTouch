@@ -36,22 +36,10 @@
 #define BKL_LUX_TABLE_INTENSITIES_2  L"IntensityMappings2"
 #define BKL_INACTIVITY_TIMEOUT       L"InactivityTimeout"
 
-#define BKL_NUM_LEVELS_DEFAULT     4
 #define BKL_DEFAULT_INTENSITY      5        // percent
-#define BKL_ALS_SAMPLING_INTERVAL  5000000  // usec
-
-#define HUNDRED_NS_PER_MS 10000
-#define GetTickCount() (KeQueryInterruptTime() / HUNDRED_NS_PER_MS)
 
 #define MONITOR_IS_OFF 0
 #define MONITOR_IS_ON  1
-
-typedef struct _BKL_LUX_TABLE_ENTRY
-{
-	ULONG Min;
-	ULONG Max;
-	ULONG Intensity;
-} BKL_LUX_TABLE_ENTRY;
 
 typedef struct _BKL_CONTEXT
 {
@@ -68,9 +56,6 @@ typedef struct _BKL_CONTEXT
 
 	WDFWAITLOCK BacklightLock;
 	ULONG CurrentBklIntensity;
-
-	ULONG BklNumLevels;
-	BKL_LUX_TABLE_ENTRY* BklLuxTable;
 
 	PVOID MonitorChangeNotificationHandle;
 } BKL_CONTEXT;
@@ -90,8 +75,6 @@ BKL_CONTEXT*
 TchBklInitialize(
 	IN WDFDEVICE FxDevice
 );
-
-DRIVER_NOTIFICATION_CALLBACK_ROUTINE TchBklOnAlsDeviceReady;
 
 DRIVER_NOTIFICATION_CALLBACK_ROUTINE TchBklOnHwnDeviceReady;
 
