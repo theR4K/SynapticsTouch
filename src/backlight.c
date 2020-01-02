@@ -306,8 +306,13 @@ Return Value:
 
 --*/
 {
+
+    //Trace(
+    //    TRACE_LEVEL_INFORMATION,
+    //    TRACE_FLAG_OTHER,
+    //    "HWN setIntensity enter");
+
 	ULONG i;
-	WDF_MEMORY_DESCRIPTOR memory;
 	NTSTATUS status;
 
 	if (BklContext->CurrentBklIntensity == Intensity)
@@ -322,21 +327,53 @@ Return Value:
 		BklContext->HwnConfiguration->HwNSettingsInfo[i].OffOnBlink =
 			(Intensity == 0) ? HWN_OFF : HWN_ON;
 	}
+    
+    WDF_REQUEST_REUSE_PARAMS  params;
+    WDF_REQUEST_REUSE_PARAMS_INIT(
+        &params,
+        WDF_REQUEST_REUSE_NO_FLAGS,
+        STATUS_SUCCESS
+    );
+    status = WdfRequestReuse(BklContext->Request, &params);
+    if(!NT_SUCCESS(status))
+    {
+        Trace(
+            TRACE_LEVEL_ERROR,
+            TRACE_FLAG_OTHER,
+            "Failed HWN RequestReuse: STATUS:%X",
+            status);
+    }
 
-	WDF_MEMORY_DESCRIPTOR_INIT_BUFFER(
-		&memory,
-		BklContext->HwnConfiguration,
-		(ULONG)BklContext->HwnConfigurationSize);
+    PVOID buf = WdfMemoryGetBuffer(BklContext->InputMemory, NULL);
+    RtlCopyMemory(buf, BklContext->HwnConfiguration, BklContext->HwnConfigurationSize);
 
+    status = WdfIoTargetFormatRequestForIoctl(
+        BklContext->HwnIoTarget,
+        BklContext->Request,
+        IOCTL_HWN_SET_STATE,
+        BklContext->InputMemory,
+        NULL,
+        BklContext->OutputMemory,
+        NULL);
 
-	status = WdfIoTargetSendIoctlSynchronously(
-		BklContext->HwnIoTarget,
-		NULL,
-		IOCTL_HWN_SET_STATE,
-		&memory,
-		NULL,
-	    NULL,
-		NULL);
+    if(!NT_SUCCESS(status))
+    {
+        Trace(
+            TRACE_LEVEL_ERROR,
+            TRACE_FLAG_OTHER,
+            "Failed HWN WdfIoTargetFormatRequestForIoctl: - STATUS:%X",
+            status);
+    }
+
+    status = STATUS_SUCCESS;
+    if(WdfRequestSend(
+        BklContext->Request,
+        BklContext->HwnIoTarget,
+        WDF_NO_SEND_OPTIONS
+    ) == FALSE)
+    {
+        status = WdfRequestGetStatus(BklContext->Request);
+    }
 
 	if (!NT_SUCCESS(status))
 	{
@@ -347,6 +384,12 @@ Return Value:
 			Intensity,
 			status);
 	}
+    
+
+    //Trace(
+    //    TRACE_LEVEL_INFORMATION,
+    //    TRACE_FLAG_OTHER,
+    //    "HWN setIntensity exit");
 
 	BklContext->CurrentBklIntensity = Intensity;
 }
@@ -515,6 +558,52 @@ Return Value:
 		BklContext->HwnConfiguration->HwNSettingsInfo[i].HwNType = HWN_LED;
 		BklContext->HwnConfiguration->HwNSettingsInfo[i].HwNSettings[HWN_INTENSITY] = 100;
 	}
+
+
+
+    status = WdfRequestCreate(WDF_NO_OBJECT_ATTRIBUTES, BklContext->HwnIoTarget, &(BklContext->Request));
+    if(!NT_SUCCESS(status))
+    {
+        Trace(
+            TRACE_LEVEL_ERROR,
+            TRACE_FLAG_OTHER,
+            "Failed HWN RequestCreate: STATUS:%X",
+            status);
+    }
+
+    status = WdfMemoryCreate(
+        WDF_NO_OBJECT_ATTRIBUTES, 
+        NonPagedPool, 
+        TOUCH_POOL_TAG, 
+        BklContext->HwnConfigurationSize, 
+        &(BklContext->OutputMemory), 
+        NULL
+    );
+    if(!NT_SUCCESS(status))
+    {
+        Trace(
+            TRACE_LEVEL_ERROR,
+            TRACE_FLAG_OTHER,
+            "Failed HWN memoryCreate1: STATUS:%X",
+            status);
+    }
+
+    WdfMemoryCreate(
+        WDF_NO_OBJECT_ATTRIBUTES,
+        NonPagedPool,
+        TOUCH_POOL_TAG,
+        BklContext->HwnConfigurationSize,
+        &(BklContext->InputMemory),
+        NULL
+    );
+    if(!NT_SUCCESS(status))
+    {
+        Trace(
+            TRACE_LEVEL_ERROR,
+            TRACE_FLAG_OTHER,
+            "Failed HWN memoryCreate2: STATUS:%X",
+            status);
+    }
 
 	//
 	// Enable the backlight if both ALS and HWN are ready

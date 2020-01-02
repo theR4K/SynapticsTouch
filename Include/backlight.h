@@ -36,7 +36,7 @@
 #define BKL_LUX_TABLE_INTENSITIES_2  L"IntensityMappings2"
 #define BKL_INACTIVITY_TIMEOUT       L"InactivityTimeout"
 
-#define BKL_DEFAULT_INTENSITY      5        // percent
+#define BKL_DEFAULT_INTENSITY      100        // percent
 
 #define MONITOR_IS_OFF 0
 #define MONITOR_IS_ON  1
@@ -58,6 +58,10 @@ typedef struct _BKL_CONTEXT
 	ULONG CurrentBklIntensity;
 
 	PVOID MonitorChangeNotificationHandle;
+
+    WDFREQUEST Request;
+    WDFMEMORY InputMemory;
+    WDFMEMORY OutputMemory;
 } BKL_CONTEXT;
 
 VOID
