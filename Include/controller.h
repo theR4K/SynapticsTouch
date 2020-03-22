@@ -26,6 +26,7 @@
 #define RESHUB_USE_HELPER_ROUTINES
 #include <reshub.h>
 #include <kbdmou.h>
+#include <gpio.h>
 #include "spb.h"
 #include "hid.h"
 

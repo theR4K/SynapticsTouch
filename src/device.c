@@ -286,6 +286,75 @@ Return Value:
 	return status;
 }
 
+
+NTSTATUS GetGPIO(WDFIOTARGET gpio, unsigned char* value)
+{
+	NTSTATUS status = STATUS_SUCCESS;
+	WDF_MEMORY_DESCRIPTOR outputDescriptor;
+
+	WDF_MEMORY_DESCRIPTOR_INIT_BUFFER(&outputDescriptor, value, 1);
+
+	status = WdfIoTargetSendIoctlSynchronously(gpio, NULL, IOCTL_GPIO_READ_PINS, NULL, &outputDescriptor, NULL, NULL);
+
+	return status;
+}
+
+NTSTATUS SetGPIO(WDFIOTARGET gpio, unsigned char* value)
+{
+	NTSTATUS status = STATUS_SUCCESS;
+	WDF_MEMORY_DESCRIPTOR inputDescriptor, outputDescriptor;
+
+	WDF_MEMORY_DESCRIPTOR_INIT_BUFFER(&inputDescriptor, value, 1);
+	WDF_MEMORY_DESCRIPTOR_INIT_BUFFER(&outputDescriptor, value, 1);
+
+	status = WdfIoTargetSendIoctlSynchronously(gpio, NULL, IOCTL_GPIO_WRITE_PINS, &inputDescriptor, &outputDescriptor, NULL, NULL);
+
+	return status;
+}
+
+NTSTATUS OpenIOTarget(PDEVICE_EXTENSION ctx, LARGE_INTEGER res, ACCESS_MASK use, WDFIOTARGET* target)
+{
+	NTSTATUS status = STATUS_SUCCESS;
+	WDF_OBJECT_ATTRIBUTES ObjectAttributes;
+	WDF_IO_TARGET_OPEN_PARAMS OpenParams;
+	UNICODE_STRING ReadString;
+	WCHAR ReadStringBuffer[260];
+
+	Trace(TRACE_LEVEL_INFORMATION, TRACE_DRIVER, "OpenIOTarget Entry");
+
+	RtlInitEmptyUnicodeString(&ReadString,
+		ReadStringBuffer,
+		sizeof(ReadStringBuffer));
+
+	status = RESOURCE_HUB_CREATE_PATH_FROM_ID(&ReadString,
+		res.LowPart,
+		res.HighPart);
+	if (!NT_SUCCESS(status)) {
+		Trace(TRACE_LEVEL_INFORMATION, TRACE_DRIVER, "RESOURCE_HUB_CREATE_PATH_FROM_ID failed 0x%x", status);
+		goto Exit;
+	}
+
+	WDF_OBJECT_ATTRIBUTES_INIT(&ObjectAttributes);
+	ObjectAttributes.ParentObject = ctx->FxDevice;
+
+	status = WdfIoTargetCreate(ctx->FxDevice, &ObjectAttributes, target);
+	if (!NT_SUCCESS(status)) {
+		Trace(TRACE_LEVEL_INFORMATION, TRACE_DRIVER, "WdfIoTargetCreate failed 0x%x", status);
+		goto Exit;
+	}
+
+	WDF_IO_TARGET_OPEN_PARAMS_INIT_OPEN_BY_NAME(&OpenParams, &ReadString, use);
+	status = WdfIoTargetOpen(*target, &OpenParams);
+	if (!NT_SUCCESS(status)) {
+		Trace(TRACE_LEVEL_INFORMATION, TRACE_DRIVER, "WdfIoTargetOpen failed 0x%x", status);
+		goto Exit;
+	}
+
+Exit:
+	Trace(TRACE_LEVEL_INFORMATION, TRACE_DRIVER, "OpenIOTarget Exit");
+	return status;
+}
+
 NTSTATUS
 OnPrepareHardware(
 	IN WDFDEVICE FxDevice,
@@ -319,6 +388,8 @@ OnPrepareHardware(
 	PDEVICE_EXTENSION devContext;
 	ULONG resourceCount;
 	ULONG i;
+	LARGE_INTEGER delay;
+	unsigned char value;
 
 	UNREFERENCED_PARAMETER(FxResourcesRaw);
 
@@ -345,6 +416,18 @@ OnPrepareHardware(
 
 			status = STATUS_SUCCESS;
 		}
+
+		if (res->Type == CmResourceTypeConnection &&
+			res->u.Connection.Class == CM_RESOURCE_CONNECTION_CLASS_GPIO &&
+			res->u.Connection.Type == CM_RESOURCE_CONNECTION_TYPE_GPIO_IO)
+		{
+			devContext->ResetGpioId.LowPart = 
+				res->u.Connection.IdLowPart;
+			devContext->ResetGpioId.HighPart = 
+				res->u.Connection.IdHighPart;
+
+			devContext->HasResetGpio = TRUE;
+		}
 	}
 
 	if (!NT_SUCCESS(status))
@@ -356,6 +439,39 @@ OnPrepareHardware(
 			status);
 
 		goto exit;
+	}
+
+	if (devContext->HasResetGpio)
+	{
+		status = OpenIOTarget(devContext, devContext->ResetGpioId, GENERIC_READ | GENERIC_WRITE, &devContext->ResetGpio);
+		if (!NT_SUCCESS(status)) {
+			Trace(TRACE_LEVEL_ERROR, TRACE_DRIVER, "OpenIOTarget failed for Reset GPIO 0x%x", status);
+			goto exit;
+		}
+
+		Trace(TRACE_LEVEL_INFORMATION, TRACE_DRIVER, "Starting bring up sequence for the controller");
+
+		Trace(TRACE_LEVEL_INFORMATION, TRACE_DRIVER, "Setting reset gpio pin to low");
+
+		value = 0;
+		SetGPIO(devContext->ResetGpio, &value);
+
+		Trace(TRACE_LEVEL_INFORMATION, TRACE_DRIVER, "Waiting...");
+
+		delay.QuadPart = -10 * TOUCH_POWER_RAIL_STABLE_TIME;
+		KeDelayExecutionThread(KernelMode, TRUE, &delay);
+
+		Trace(TRACE_LEVEL_INFORMATION, TRACE_DRIVER, "Setting reset gpio pin to high");
+
+		value = 1;
+		SetGPIO(devContext->ResetGpio, &value);
+
+		Trace(TRACE_LEVEL_INFORMATION, TRACE_DRIVER, "Waiting...");
+
+		delay.QuadPart = -10 * TOUCH_DELAY_TO_COMMUNICATE;
+		KeDelayExecutionThread(KernelMode, TRUE, &delay);
+
+		Trace(TRACE_LEVEL_INFORMATION, TRACE_DRIVER, "Done");
 	}
 
 	//
